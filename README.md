@@ -21,6 +21,15 @@ Goal of this Project is to develop a mobile Chatbot for Android.
 - Custom Design and Adaptability
 - Open Source?
 
+## Installation
+
+[Installation Guide for Flutter](https://docs.flutter.dev/get-started/install/windows/web)
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
 ## Architecture
 
 The Mobile Chatbot Application is built using Flutter and Dart. The project integrates with an external API provided by the instructor for chat operations, authentication, and message handling.
@@ -47,15 +56,6 @@ All server commands are key-value pairs either in GET requests or in POST bodies
 |-------------|----------------------------|------------|-----------|
 |sendmessage	|token, text <,chatid>	     |message-id  |depreciated|
 |postmessage	|token, text, photo <,chatid>|message-id  |           |	
-
-## Installation
-
-[Installation Guide for Flutter](https://docs.flutter.dev/get-started/install/windows/web)
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
 ## Contributions Guidelines
 
