@@ -5,6 +5,7 @@
 - [Planned Features](#planned-features)
 - [Installation](#installation)
 - [Architecture](#architecture)
+- [API](#api)
 - [Contributions Guidelines](#contributions-guidelines)
 - [Authors](#authors)
 - [License](#license)
@@ -23,6 +24,29 @@ Goal of this Project is to develop a mobile Chatbot for Android.
 ## Architecture
 
 The Mobile Chatbot Application is built using Flutter and Dart. The project integrates with an external API provided by the instructor for chat operations, authentication, and message handling.
+
+## Api
+
+### Server commands
+All server commands are key-value pairs either in GET requests or in POST bodies. All GET commands are sent with a request=xyz.
+
+### GET Requests
+|**request**  |**parameters**                      |**response**|**status** |
+|-------------|------------------------------------|------------|-----------|
+|register     |userid, password, nickname, fullname|token	      |           |
+|login        |userid, password                    |token	      |           |
+|logout       |token                               |            |           |	
+|deregister   |token		                           |            |           |
+|fetchmessages|token <,chatid>                     |message-list|depreciated|
+|getmessages  |token <,chatid>                     |message-list|           |
+|getphoto     |token, photoid                      |image       |           |
+|validatetoken|token                               |ok or error |           |	
+
+### Post Requests: everything in body
+|**request**  |**parameters**              |**response**|**status** |
+|-------------|----------------------------|------------|-----------|
+|sendmessage	|token, text <,chatid>	     |message-id  |depreciated|
+|postmessage	|token, text, photo <,chatid>|message-id  |           |	
 
 ## Installation
 
