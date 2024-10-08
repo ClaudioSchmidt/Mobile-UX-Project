@@ -17,10 +17,24 @@ class ApiService {
     }
   }
 
-  Future<void> logout() async {
-    final tokenStorage = TokenStorage();
-    await tokenStorage.deleteToken();
+ Future<void> logout() async {
+  final tokenStorage = TokenStorage();
+  String? token = await tokenStorage.getToken();  // Token holen
+
+  if (token != null) {
+    // Sendet eine GET-Anfrage zum Abmelden
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=logout&token=$token'),
+    );
+
+    // Überprüfen, ob die Logout-Anfrage erfolgreich war
+    if (response.statusCode == 200) {
+      await tokenStorage.deleteToken(); // Lösche den Token lokal
+    } else {
+      throw Exception('Logout failed');
     }
+  }
+  }
 
   Future<String?> register(String userId, String password, String fullName, String nickname) async {
     final response = await http.get(
@@ -43,11 +57,8 @@ class ApiService {
       return false;  // Wenn kein Token existiert, abbrechen
     }
 
-    final response = await http.delete(
-      Uri.parse('$apiUrl?request=deregister&userid=$userId&token=$token'),
-      headers: {
-        'Authorization': 'Bearer $token',  // Token im Header senden
-      },
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=deregister&token=$token'),
     );
 
     if (response.statusCode == 200) {
