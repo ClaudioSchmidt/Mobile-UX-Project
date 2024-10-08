@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
   final TokenStorage _tokenStorage = TokenStorage();
+  bool _isLoggedIn = false; // Variable für den Anmeldestatus
 
   void _login() async {
     String? token = await _apiService.login(
@@ -24,6 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (token != null) {
       await _tokenStorage.saveToken(token);
+      setState(() {
+        _isLoggedIn = true; // Benutzer ist eingeloggt
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login successful! Token: $token')),
       );
@@ -31,6 +35,54 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login failed!')),
       );
+    }
+  }
+
+  void _logout() async {
+    await _apiService.logout();
+    setState(() {
+      _isLoggedIn = false; // Benutzer ist ausgeloggt
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Logged out successfully!')),
+    );
+  }
+
+  void _deregister() async {
+    final confirmation = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Deregistration'),
+          content: const Text('Are you sure you want to deregister? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true), // Bestätigen
+              child: const Text('Yes'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Abbrechen
+              child: const Text('No'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmation == true) {
+      bool success = await _apiService.deregister(_userIdController.text);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Deregistration successful!')),
+        );
+        setState(() {
+          _isLoggedIn = false; // Benutzer ist ausgeloggt
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Deregistration failed!')),
+        );
+      }
     }
   }
 
@@ -55,10 +107,30 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _login,
-              child: const Text('Login'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _login,
+                  child: const Text('Login'),
+                ),
+                const SizedBox(width: 10),
+                if (_isLoggedIn) 
+                  ElevatedButton(
+                    onPressed: _logout,
+                    child: const Text('Logout'),
+                  ),
+              ],
             ),
+            const SizedBox(height: 10),
+            if (_isLoggedIn)
+              ElevatedButton(
+                onPressed: _deregister,
+                child: const Text('Deregister'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+              ),
             const SizedBox(height: 10),
             TextButton(
               onPressed: () {
