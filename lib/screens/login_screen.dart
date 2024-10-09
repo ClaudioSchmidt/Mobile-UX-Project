@@ -126,10 +126,10 @@ class _LoginScreenState extends State<LoginScreen> {
             if (_isLoggedIn)
               ElevatedButton(
                 onPressed: _deregister,
-                child: const Text('Deregister'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                 ),
+                child: const Text('Deregister'),
               ),
             const SizedBox(height: 10),
             TextButton(
