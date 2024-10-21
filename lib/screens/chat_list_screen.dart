@@ -4,7 +4,7 @@ import '../core/api_service.dart';
 import '../core/token_storage.dart';
 
 class ChatListScreen extends StatefulWidget {
-  const ChatListScreen({Key? key}) : super(key: key);
+  const ChatListScreen({super.key});
 
   @override
   _ChatListScreenState createState() => _ChatListScreenState();
@@ -129,8 +129,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createChat,
-        child: const Icon(Icons.add),
         tooltip: 'Create new chat',
+        child: const Icon(Icons.add),
       ),
     );
   }

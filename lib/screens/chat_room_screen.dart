@@ -6,7 +6,7 @@ class ChatRoomScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
 
-  const ChatRoomScreen({Key? key, required this.chatId, required this.chatName}) : super(key: key);
+  const ChatRoomScreen({super.key, required this.chatId, required this.chatName});
 
   @override
   _ChatRoomScreenState createState() => _ChatRoomScreenState();
@@ -82,9 +82,7 @@ String _formatTimestamp(String timestamp) {
   try {
     // Replace the first underscore with 'T' and the remaining dashes in the time part with colons
     String formattedTimestamp = timestamp.replaceFirst('_', 'T');
-    formattedTimestamp = formattedTimestamp.substring(0, 13) + ':' + 
-                         formattedTimestamp.substring(14, 16) + ':' + 
-                         formattedTimestamp.substring(17);
+    formattedTimestamp = '${formattedTimestamp.substring(0, 13)}:${formattedTimestamp.substring(14, 16)}:${formattedTimestamp.substring(17)}';
 
     // Parse the string to a DateTime object
     DateTime parsedTime = DateTime.parse(formattedTimestamp);

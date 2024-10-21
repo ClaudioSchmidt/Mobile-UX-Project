@@ -119,7 +119,7 @@ class ApiService {
   }
 
     Future<bool> createChat(String token, String chatName) async {
-    final uri = Uri.parse('$apiUrl');
+    final uri = Uri.parse(apiUrl);
     final body = {
       'request': 'createchat',
       'token': token,
@@ -145,39 +145,9 @@ class ApiService {
     }
   }
 
-/* -> complain message
+// -> this worked
 Future<bool> postMessage(String token, String text, {required int chatId}) async {
-  final uri = Uri.parse('$apiUrl');
-  final body = {
-    'request': 'postmessage',
-    'token': token,
-    'text': text,
-    'chatid': chatId.toString(),
-  };
-
-  try {
-    final response = await httpClient.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    );
-
-    print('Post Message Response Status Code: ${response.statusCode}');
-    print('Post Message Response Body: ${response.body}');
-
-    return response.statusCode == 200;
-  } catch (e) {
-    print('Error posting message: $e');
-    return false;
-  }
-}
-*/
-
-/* -> <e test
-Future<bool> postMessage(String token, String text, {required int chatId}) async {
-  final uri = Uri.parse('$apiUrl');
+  final uri = Uri.parse(apiUrl);
   final body = jsonEncode({
     'request': 'postmessage',
     'token': token,
@@ -189,78 +159,7 @@ Future<bool> postMessage(String token, String text, {required int chatId}) async
     final response = await httpClient.post(
       uri,
       headers: {
-        'Content-Type': 'application/json', // Setze den Content-Type auf JSON
-      },
-      body: body,
-    );
-
-    print('Post Message Response Status Code: ${response.statusCode}');
-    print('Post Message Response Body: ${response.body}');
-
-    // Prüfe, ob die Antwort wirklich ein JSON ist und ob sie die erwarteten Daten enthält
-    if (response.statusCode == 200) {
-      try {
-        final json = jsonDecode(response.body);
-        return json.containsKey('message-id'); // Überprüfe, ob die Antwort das erwartete Feld enthält
-      } catch (e) {
-        print('Error parsing JSON: $e');
-        return false;
-      }
-    } else {
-      return false;
-    }
-  } catch (e) {
-    print('Error posting message: $e');
-    return false;
-  }
-}
-*/
-
-/* -> test part 2
-Future<bool> postMessage(String token, String text, {required int chatId}) async {
-  final uri = Uri.parse('$apiUrl');
-  final body = {
-    'request': 'postmessage',
-    'token': token,
-    'text': text,
-    'chatid': chatId.toString(),
-  };
-
-  try {
-    final response = await httpClient.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    );
-
-    print('Post Message Response Status Code: ${response.statusCode}');
-    print('Post Message Response Body: ${response.body}');
-
-    return response.statusCode == 200;
-  } catch (e) {
-    print('Error posting message: $e');
-    return false;
-  }
-}
-*/
-
-// -> test part 3, just to be sure
-Future<bool> postMessage(String token, String text, {required int chatId}) async {
-  final uri = Uri.parse('$apiUrl');
-  final body = jsonEncode({
-    'request': 'postmessage',
-    'token': token,
-    'text': text,
-    'chatid': chatId.toString(),
-  });
-
-  try {
-    final response = await httpClient.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json', // Setze den Content-Type auf JSON
+        'Content-Type': 'application/json',
       },
       body: body,
     );
@@ -270,7 +169,6 @@ Future<bool> postMessage(String token, String text, {required int chatId}) async
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
-      // Überprüfe, ob der Status und der Code in der Antwort "ok" und 200 sind
       if (json['status'] == 'ok' && json['code'] == 200) {
         return true;
       }
