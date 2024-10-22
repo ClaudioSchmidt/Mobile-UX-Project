@@ -118,12 +118,12 @@ class ApiService {
     }
   }
 
-    Future<bool> createChat(String token, String chatName) async {
+    Future<bool> createChat(String token, String chatname) async {
     final uri = Uri.parse(apiUrl);
     final body = {
       'request': 'createchat',
       'token': token,
-      'chatname': chatName,
+      'chatname': chatname,
     };
 
     try {
