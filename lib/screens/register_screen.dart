@@ -1,81 +1,67 @@
 import 'package:flutter/material.dart';
-import '../core/token_storage.dart';
 import '../core/api_service.dart';
 
-class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key});
-
+class RegisterScreen extends StatefulWidget {
   @override
-  _RegistrationScreenState createState() => _RegistrationScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
   final ApiService _apiService = ApiService();
-  final TokenStorage _tokenStorage = TokenStorage();
 
   void _register() async {
-    String? token = await _apiService.register(
-      _userIdController.text,
-      _passwordController.text,
-      _fullNameController.text,
-      _nicknameController.text,
-    );
+    final userId = _userIdController.text;
+    final password = _passwordController.text;
+    final nickname = _nicknameController.text;
+    final fullName = _fullNameController.text;
+
+    final token = await _apiService.register(userId, password, nickname, fullName);
 
     if (token != null) {
-      await _tokenStorage.saveToken(token);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration successful! Token: $token')),
-      );
+      // Erfolgsmeldung anzeigen
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registrierung erfolgreich!')));
+      
+      // Weiterleitung zum Hauptbildschirm
+      Navigator.pushReplacementNamed(context, '/main');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration failed!')),
-      );
+      // Fehlermeldung anzeigen
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registrierung fehlgeschlagen')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registration'),
-      ),
+      appBar: AppBar(title: Text('Register')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+          children: [
             TextField(
               controller: _userIdController,
-              decoration: const InputDecoration(labelText: 'User ID'),
+              decoration: InputDecoration(labelText: 'User ID'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             TextField(
               controller: _nicknameController,
-              decoration: const InputDecoration(labelText: 'Nickname'),
+              decoration: InputDecoration(labelText: 'Nickname'),
             ),
             TextField(
               controller: _fullNameController,
-              decoration: const InputDecoration(labelText: 'Full Name'),
+              decoration: InputDecoration(labelText: 'Full Name'),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: _register,
-              child: const Text('Register'),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Already have an account? Login here'),
+              child: Text('Register'),
             ),
           ],
         ),

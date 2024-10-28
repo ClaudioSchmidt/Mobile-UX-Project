@@ -44,53 +44,67 @@ class _ChatListScreenState extends State<ChatListScreen> {
     }
   }
 
-  Future<void> _createChat() async {
-    String? token = await _tokenStorage.getToken();
-    if (token == null) return;
+Future<void> _createChat() async {
+  String? token = await _tokenStorage.getToken();
+  if (token == null) return;
 
-    TextEditingController chatNameController = TextEditingController();
+  TextEditingController chatNameController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Create New Chat'),
-          content: TextField(
-            controller: chatNameController,
-            decoration: const InputDecoration(hintText: 'Enter chat name'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                String chatName = chatNameController.text.trim();
-                if (chatName.isNotEmpty) {
-                  bool success = await _apiService.createChat(token, chatName);
-                  if (success) {
-                    Navigator.of(context).pop();
-                    _getChats();  // Refresh the chat list
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chat created successfully!')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to create chat')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Create'),
-            ),
-            TextButton(
-              onPressed: () {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Create New Chat'),
+        content: TextField(
+          controller: chatNameController,
+          decoration: const InputDecoration(hintText: 'Enter chat name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              String chatName = chatNameController.text.trim();
+              if (chatName.isNotEmpty) {
+                bool success = await _apiService.createChat(token, chatName);
                 Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Chat created successfully!')),
+                  );
+                  
+                  // Versuche, die Chatliste bis zu 3-mal zu aktualisieren, falls die Server-Session nicht sofort aktualisiert wird
+                  for (int i = 0; i < 3; i++) {
+                    await _getChats();
+                    
+                    // Überprüfe, ob der neue Chat jetzt in der Liste ist
+                    if (_chats.any((chat) => chat['chatname'] == chatName)) {
+                      break; // Beende die Schleife, wenn der Chat gefunden wird
+                    }
+                    
+                    // Warte kurz vor dem nächsten Versuch
+                    await Future.delayed(const Duration(seconds: 2));
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to create chat')),
+                  );
+                }
+              }
+            },
+            child: const Text('Create'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   Future<void> _logout() async {
     await _apiService.logout();
@@ -186,39 +200,43 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Stack(
-        children: [
-          Positioned(
-            bottom: 0,
-            left: 30,
-            child: FloatingActionButton(
-              onPressed: _logout,
-              tooltip: 'Logout',
-              backgroundColor: Colors.blue,
-              child: const Icon(Icons.logout),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            right: 30,
-            child: FloatingActionButton(
-              onPressed: _deregister,
-              tooltip: 'Deregister',
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.delete),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            right: MediaQuery.of(context).size.width / 2 - 28, // Adjust the position to center
-            child: FloatingActionButton(
-              onPressed: _createChat,
-              tooltip: 'Create new chat',
-              backgroundColor: Colors.green,
-              child: const Icon(Icons.add),
-            ),
-          ),
-        ],
+  children: [
+    Positioned(
+      bottom: 0,
+      left: 30,
+      child: FloatingActionButton(
+        heroTag: 'logoutButton',
+        onPressed: _logout,
+        tooltip: 'Logout',
+        backgroundColor: Colors.blue,
+        child: const Icon(Icons.logout),
       ),
+    ),
+    Positioned(
+      bottom: 0,
+      right: 30,
+      child: FloatingActionButton(
+        heroTag: 'deregisterButton',
+        onPressed: _deregister,
+        tooltip: 'Deregister',
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.delete),
+      ),
+    ),
+    Positioned(
+      bottom: 0,
+      right: MediaQuery.of(context).size.width / 2 - 28, // Adjust the position to center
+      child: FloatingActionButton(
+        heroTag: 'createChatButton',
+        onPressed: _createChat,
+        tooltip: 'Create new chat',
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.add),
+      ),
+    ),
+  ],
+),
+
     );
   }
 }

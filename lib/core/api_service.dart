@@ -1,183 +1,233 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'constants.dart'; // Ensure constants.dart defines 'apiUrl'
-import 'token_storage.dart'; // Ensure token_storage.dart manages token retrieval and storage
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  final http.Client httpClient;
+  final FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  ApiService({http.Client? httpClient}) : httpClient = httpClient ?? http.Client();
+  Future<void> updateToken(String? token) async {
+    if (token != null) {
+      await _storage.write(key: 'token', value: token);
+      print("Token wurde erfolgreich aktualisiert.");
+    } else {
+      await _storage.delete(key: 'token');
+      print("Token wurde erfolgreich gelöscht.");
+    }
+  }
+
+  Future<String?> getToken() async {
+    final token = await _storage.read(key: 'token');
+    print("Aktueller Token: $token");
+    return token;
+  }
+
+  Future<void> clearAllStorage() async {
+    await _storage.deleteAll();
+    print("Alle gespeicherten Daten wurden vollständig gelöscht.");
+  }
+
+  Future<String?> register(String userId, String password, String nickname, String fullName) async {
+    await clearAllStorage(); // Clear old data
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=register&userid=$userId&password=$password&nickname=$nickname&fullname=$fullName'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final token = data['token'];
+      await updateToken(token);
+      return token;
+    }
+    return null;
+  }
 
   Future<String?> login(String userId, String password) async {
-    final uri = Uri.parse('$apiUrl?request=login&userid=$userId&password=$password');
-    try {
-      final response = await httpClient.get(uri);
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['token'];
-      }
-      return null;
-    } catch (e) {
-      print('Error during login: $e');
-      return null;
-    }
-  }
+    await clearAllStorage(); // Clear old data
 
-  Future<void> logout() async {
-    try {
-      final tokenStorage = TokenStorage();
-      final token = await tokenStorage.getToken();
-      if (token == null) return;
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=login&userid=$userId&password=$password'),
+    );
 
-      final uri = Uri.parse('$apiUrl?request=logout&token=$token');
-      final response = await httpClient.get(uri);
-
-      if (response.statusCode == 200) {
-        await tokenStorage.deleteToken();
+    if (response.statusCode == 200) {
+      print(response.body);
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'ok' && data.containsKey('token')) {
+        final token = data['token'];
+        await updateToken(token);
+        print("Login erfolgreich, Token erhalten und gespeichert: $token");
+        return token;
       } else {
-        throw Exception('Logout failed');
+        print("Login fehlgeschlagen: ${data['message']}");
       }
-    } catch (e) {
-      print('Error during logout: $e');
+    } else {
+      print("Fehler beim Login: Statuscode ${response.statusCode}");
     }
+    return null;
   }
 
-  Future<String?> register(String userId, String password, String fullName, String nickname) async {
-    final uri = Uri.parse('$apiUrl?request=register&userid=$userId&password=$password&fullname=$fullName&nickname=$nickname');
-    try {
-      final response = await httpClient.get(uri);
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['token'];
-      }
-      return null;
-    } catch (e) {
-      print('Error during registration: $e');
-      return null;
+  Future<bool> logout() async {
+    final token = await getToken();
+    if (token == null) {
+      print("Benutzer ist bereits ausgeloggt oder kein Token vorhanden.");
+      return true;
     }
+
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=logout&token=$token'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'ok') {
+        await clearAllStorage();
+        print("Logout erfolgreich und alle Daten gelöscht.");
+        return true;
+      } else {
+        print("Logout fehlgeschlagen: ${data['message']}");
+      }
+    } else {
+      print("Fehler beim Logout: Statuscode ${response.statusCode}");
+    }
+    return false;
   }
 
   Future<bool> deregister() async {
-    try {
-      final tokenStorage = TokenStorage();
-      final token = await tokenStorage.getToken();
-      if (token == null) return false;
+    final token = await getToken();
+    if (token == null) {
+      print("Fehler: Kein gültiger Token für die Deregistrierung gefunden.");
+      return false;
+    }
 
-      final uri = Uri.parse('$apiUrl?request=deregister&token=$token');
-      final response = await httpClient.get(uri);
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=deregister&token=$token'),
+    );
 
-      if (response.statusCode == 200) {
-        await tokenStorage.deleteToken();
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'ok') {
+        await clearAllStorage();
+        print("Account erfolgreich gelöscht und alle Daten zurückgesetzt.");
         return true;
+      } else {
+        print("Fehler beim Löschen des Accounts: ${data['message']}");
       }
-      return false;
-    } catch (e) {
-      print('Error during deregistration: $e');
-      return false;
+    } else {
+      print("Serverfehler bei der Deregistrierung: ${response.statusCode}");
     }
+    return false;
   }
 
-  Future<List<Map<String, dynamic>>?> getChats(String token) async {
-    final uri = Uri.parse('$apiUrl?request=getchats&token=$token');
-    try {
-      final response = await httpClient.get(uri);
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        if (json.containsKey('chats')) {
-          return List<Map<String, dynamic>>.from(json['chats']);
-        }
-        print('No chats found in the response.');
-        return null;
+  Future<List<dynamic>?> getChats() async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=getchats&token=$token'),
+    );
+
+    if (response.statusCode == 200) {
+      print('getChats Response body: ${response.body}');
+      final responseBody = response.body;
+      final jsonString = responseBody.substring(responseBody.indexOf('{'));
+
+      final data = jsonDecode(jsonString);
+      if (data['status'] == 'ok' && data.containsKey('chats')) {
+        return data['chats'];
       }
-      print('Failed to fetch chats: ${response.statusCode}');
-      return null;
-    } catch (e) {
-      print('Error fetching chats: $e');
-      return null;
     }
+    return null;
   }
 
-  Future<List<Map<String, dynamic>>?> getMessages(String token, {required int chatId}) async {
-    final uri = Uri.parse('$apiUrl?request=getmessages&token=$token&chatid=$chatId');
-    try {
-      final response = await httpClient.get(uri);
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        if (json.containsKey('messages')) {
-          //print('Response body: ${List<Map<String, dynamic>>.from(json['messages'])}');
-          return List<Map<String, dynamic>>.from(json['messages']);
-        }
-        print('No messages found in the response.');
-        return null;
+  Future<bool> deleteChat(int chatId) async {
+    final token = await getToken();
+    if (token == null) return false;
+
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=deletechat&token=$token&chatid=$chatId'),
+    );
+
+    if (response.statusCode == 200) {
+      print('deleteChat Response body: ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['status'] == 'ok';
+    }
+    return false;
+  }
+
+  Future<bool> createChat(String chatName) async {
+    final token = await getToken();
+    if (token == null) return false;
+
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=createchat&token=$token&chatname=$chatName'),
+    );
+
+    if (response.statusCode == 200) {
+      print('createChat Response body: ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['status'] == 'ok';
+    }
+    return false;
+  }
+
+  Future<List<dynamic>?> getMessages(int chatId) async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    final response = await http.get(
+      Uri.parse('$apiUrl?request=getmessages&token=$token&chatid=$chatId'),
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = response.body;
+      final jsonString = responseBody.substring(responseBody.indexOf('{'));
+      final data = jsonDecode(jsonString);
+
+      if (data['status'] == 'ok' && data.containsKey('messages')) {
+        return data['messages']
+            .map((message) => {
+                  'id': message['id'],
+                  'userid': message['userid'] ?? '',
+                  'time': message['time'] ?? '',
+                  'chatid': message['chatid'] ?? 0,
+                  'text': message['text'] ?? '',
+                  'usernick': message['usernick'] ?? '',
+                  'userhash': message['userhash'] ?? '',
+                })
+            .toList();
       }
-      print('Failed to fetch messages: ${response.statusCode}');
-      return null;
-    } catch (e) {
-      print('Error fetching messages: $e');
-      return null;
     }
+    return null;
   }
 
-    Future<bool> createChat(String token, String chatname) async {
-    final uri = Uri.parse(apiUrl);
-    final body = {
-      'request': 'createchat',
-      'token': token,
-      'chatname': chatname,
-    };
-
-    try {
-      final response = await httpClient.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body,
-      );
-
-      print('Create Chat Response Status Code: ${response.statusCode}');
-      print('Create Chat Response Body: ${response.body}');
-
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Error creating chat: $e');
+  Future<bool> sendMessage(int chatId, String message) async {
+    final token = await getToken();
+    if (token == null) {
+      print("Fehler: Token ist null");
       return false;
     }
-  }
 
-// -> this worked
-Future<bool> postMessage(String token, String text, {required int chatId}) async {
-  final uri = Uri.parse(apiUrl);
-  final body = jsonEncode({
-    'request': 'postmessage',
-    'token': token,
-    'text': text,
-    'chatid': chatId.toString(),
-  });
-
-  try {
-    final response = await httpClient.post(
-      uri,
+    final response = await http.post(
+      Uri.parse('$apiUrl'),
       headers: {
         'Content-Type': 'application/json',
       },
-      body: body,
+      body: jsonEncode({
+        'request': 'postmessage',
+        'token': token,
+        'text': message,
+        'chatid': chatId,
+      }),
     );
 
-    print('Post Message Response Status Code: ${response.statusCode}');
-    print('Post Message Response Body: ${response.body}');
-
     if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      if (json['status'] == 'ok' && json['code'] == 200) {
-        return true;
-      }
+      final data = jsonDecode(response.body);
+      return data['status'] == 'ok';
+    } else {
+      print("Fehler: Server antwortete mit Statuscode ${response.statusCode}");
+      print("Antwortinhalt: ${response.body}");
+      return false;
     }
-    return false;
-  } catch (e) {
-    print('Error posting message: $e');
-    return false;
   }
-}
-
 }

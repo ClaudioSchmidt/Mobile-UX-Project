@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_service.dart';
-import '../core/token_storage.dart';
-import 'chat_list_screen.dart';  // Importiere den neuen Screen
-import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -15,67 +10,50 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
-  final TokenStorage _tokenStorage = TokenStorage();
 
   void _login() async {
-    String? token = await _apiService.login(
-      _userIdController.text,
-      _passwordController.text,
-    );
+    final userId = _userIdController.text;
+    final password = _passwordController.text;
+
+    final token = await _apiService.login(userId, password);
 
     if (token != null) {
-      await _tokenStorage.saveToken(token);
+      // Erfolgsmeldung anzeigen
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login erfolgreich!')));
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login successful! Token: $token')),
-      );
- 
-      // Nach erfolgreichem Login weiter zum ChatListScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ChatListScreen()),
-      );
+      // Weiterleitung zum Hauptbildschirm
+      Navigator.pushReplacementNamed(context, '/main');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed!')),
-      );
+      // Fehlermeldung anzeigen
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login fehlgeschlagen')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
+      appBar: AppBar(title: Text('Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+          children: [
             TextField(
               controller: _userIdController,
-              decoration: const InputDecoration(labelText: 'User ID'),
+              decoration: InputDecoration(labelText: 'User ID'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: _login,
-              child: const Text('Login'),
+              child: Text('Login'),
             ),
-            const SizedBox(height: 10),
             TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegistrationScreen()),
-                );
-              },
-              child: const Text('Don\'t have an account? Register here'),
+              onPressed: () => Navigator.pushNamed(context, '/register'),
+              child: Text('Noch keinen Account? Registrieren'),
             ),
           ],
         ),
