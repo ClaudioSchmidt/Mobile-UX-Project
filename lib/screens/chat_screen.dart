@@ -16,35 +16,19 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<dynamic> messages = [];
-  int? lastMessageId; // Speichert die ID der letzten geladenen Nachricht
 
   @override
   void initState() {
     super.initState();
-    _loadMessages(); // Lade alle Nachrichten beim Start
+    _loadMessages();
   }
 
-  Future<void> _loadMessages({bool loadNewOnly = false}) async {
-    // Wenn `loadNewOnly` true ist, lade nur neue Nachrichten ab der letzten Nachricht-ID
-    final fetchedMessages = await _apiService.getMessages(
-      widget.chatId,
-      fromId: loadNewOnly ? lastMessageId : null,
-    );
-
-    if (fetchedMessages != null && fetchedMessages.isNotEmpty) {
+  Future<void> _loadMessages() async {
+    final fetchedMessages = await _apiService.getMessages(widget.chatId);
+    if (fetchedMessages != null) {
       setState(() {
-        // Aktualisiere `lastMessageId` mit der ID der neuesten Nachricht
-        lastMessageId = fetchedMessages.last['id'];
-
-        // Füge neue Nachrichten hinzu, wenn `loadNewOnly` true ist, sonst ersetze alle
-        if (loadNewOnly) {
-          messages.addAll(fetchedMessages);
-        } else {
-          messages = fetchedMessages;
-        }
+        messages = fetchedMessages;
       });
-
-      // Stelle sicher, dass der Scrollvorgang erst nach dem vollständigen Aufbau des Widgets erfolgt
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
@@ -58,7 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
     bool success = await _apiService.sendMessage(widget.chatId, messageText);
     if (success) {
       _messageController.clear();
-      await _loadMessages(loadNewOnly: true); // Lade nur neue Nachrichten
+      await _loadMessages();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nachricht konnte nicht gesendet werden')));
     }
@@ -66,7 +50,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _scrollController.jumpTo (
+        _scrollController.position.maxScrollExtent,
+      );
     }
   }
 

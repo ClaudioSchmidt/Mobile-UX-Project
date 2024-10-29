@@ -6,13 +6,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
   final FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  String _generateRandomQuery() {
-    return 'random=${DateTime.now().millisecondsSinceEpoch}';
-  }
-
   Future<String?> getUserHash() async {
-  return await _storage.read(key: 'userHash');
-}
+    return await _storage.read(key: 'userHash');
+  }
 
   Future<void> updateToken(String? token) async {
     if (token != null) {
@@ -32,7 +28,6 @@ class ApiService {
 
   Future<void> clearAllStorage() async {
     await _storage.deleteAll();
-    print("Alle gespeicherten Daten wurden vollständig gelöscht.");
   }
 
   Future<String?> register(String userId, String password, String nickname, String fullName) async {
@@ -60,11 +55,10 @@ Future<String?> login(String userId, String password) async {
     if (data['status'] == 'ok' && data.containsKey('token') && data.containsKey('hash')) {
       final token = data['token'];
       final userHash = data['hash'];
+
       await updateToken(token);
-      
       await _storage.write(key: 'userHash', value: userHash);
       
-      print("Login erfolgreich, Token und Benutzer-Hash gespeichert.");
       return token;
     } else {
       print("Login fehlgeschlagen: ${data['message']}");
@@ -87,7 +81,6 @@ Future<String?> login(String userId, String password) async {
       final data = jsonDecode(response.body);
       if (data['status'] == 'ok') {
         await clearAllStorage();
-        print("Logout erfolgreich und alle Daten gelöscht.");
         return true;
       } else {
         print("Logout fehlgeschlagen: ${data['message']}");
@@ -100,10 +93,6 @@ Future<String?> login(String userId, String password) async {
 
   Future<bool> deregister() async {
     final token = await getToken();
-    if (token == null) {
-      print("Fehler: Kein gültiger Token für die Deregistrierung gefunden.");
-      return false;
-    }
 
     final response = await http.get(
       Uri.parse('$apiUrl?request=deregister&token=$token&${_generateRandomQuery()}'),
@@ -113,7 +102,6 @@ Future<String?> login(String userId, String password) async {
       final data = jsonDecode(response.body);
       if (data['status'] == 'ok') {
         await clearAllStorage();
-        print("Account erfolgreich gelöscht und alle Daten zurückgesetzt.");
         return true;
       } else {
         print("Fehler beim Löschen des Accounts: ${data['message']}");
@@ -126,14 +114,13 @@ Future<String?> login(String userId, String password) async {
 
   Future<List<dynamic>?> getChats() async {
     final token = await getToken();
-    if (token == null) return null;
 
     final response = await http.get(
       Uri.parse('$apiUrl?request=getchats&token=$token&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
-      print('getChats Response body: ${response.body}');
+      //print('getChats Response body: ${response.body}');
       final responseBody = response.body;
       final jsonString = responseBody.substring(responseBody.indexOf('{'));
 
@@ -147,14 +134,13 @@ Future<String?> login(String userId, String password) async {
 
   Future<bool> deleteChat(int chatId) async {
     final token = await getToken();
-    if (token == null) return false;
 
     final response = await http.get(
       Uri.parse('$apiUrl?request=deletechat&token=$token&chatid=$chatId&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
-      print('deleteChat Response body: ${response.body}');
+      //print('deleteChat Response body: ${response.body}');
       final data = jsonDecode(response.body);
       return data['status'] == 'ok';
     }
@@ -163,37 +149,36 @@ Future<String?> login(String userId, String password) async {
 
   Future<bool> createChat(String chatName) async {
     final token = await getToken();
-    if (token == null) return false;
 
     final response = await http.get(
       Uri.parse('$apiUrl?request=createchat&token=$token&chatname=$chatName&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
-      print('createChat Response body: ${response.body}');
+      //print('createChat Response body: ${response.body}');
       final data = jsonDecode(response.body);
       return data['status'] == 'ok';
     }
     return false;
   }
 
+  String _generateRandomQuery() {
+    return 'random=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
 Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
   final token = await getToken();
   if (token == null) return null;
 
-  // Erstelle die URL mit oder ohne fromId-Parameter
   final url = Uri.parse(
-    '$apiUrl?request=getmessages&token=$token&chatid=$chatId&${_generateRandomQuery()}' +
-    (fromId != null ? '&fromid=$fromId' : ''),
+    '$apiUrl?request=getmessages&token=$token&chatid=$chatId&${_generateRandomQuery()}${fromId != null ? '&fromid=$fromId' : ''}',
   );
 
   final response = await http.get(url);
 
   if (response.statusCode == 200) {
-    print('getMessages Response body: ${response.body}');
+    //print('getMessages Response body: ${response.body}');
     final responseBody = response.body;
-
-    // Entferne HTML-Warnungen, um nur JSON zu erhalten
     final jsonString = responseBody.substring(responseBody.indexOf('{'));
 
     try {
@@ -210,10 +195,6 @@ Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
 
   Future<bool> sendMessage(int chatId, String message) async {
     final token = await getToken();
-    if (token == null) {
-      print("Fehler: Token ist null");
-      return false;
-    }
 
     final response = await http.post(
       Uri.parse('$apiUrl'),
