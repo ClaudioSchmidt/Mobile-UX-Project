@@ -1,10 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'constants.dart'; // Ensure constants.dart defines 'apiUrl'
+import 'constants.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   final FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  String _generateRandomQuery() {
+    return 'random=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<String?> getUserHash() async {
+  return await _storage.read(key: 'userHash');
+}
 
   Future<void> updateToken(String? token) async {
     if (token != null) {
@@ -28,9 +36,9 @@ class ApiService {
   }
 
   Future<String?> register(String userId, String password, String nickname, String fullName) async {
-    await clearAllStorage(); // Clear old data
+    await clearAllStorage();
     final response = await http.get(
-      Uri.parse('$apiUrl?request=register&userid=$userId&password=$password&nickname=$nickname&fullname=$fullName'),
+      Uri.parse('$apiUrl?request=register&userid=$userId&password=$password&nickname=$nickname&fullname=$fullName&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
@@ -42,39 +50,37 @@ class ApiService {
     return null;
   }
 
-  Future<String?> login(String userId, String password) async {
-    await clearAllStorage(); // Clear old data
+Future<String?> login(String userId, String password) async {
+  final response = await http.get(
+    Uri.parse('$apiUrl?request=login&userid=$userId&password=$password&${_generateRandomQuery()}'),
+  );
 
-    final response = await http.get(
-      Uri.parse('$apiUrl?request=login&userid=$userId&password=$password'),
-    );
-
-    if (response.statusCode == 200) {
-      print(response.body);
-      final data = jsonDecode(response.body);
-      if (data['status'] == 'ok' && data.containsKey('token')) {
-        final token = data['token'];
-        await updateToken(token);
-        print("Login erfolgreich, Token erhalten und gespeichert: $token");
-        return token;
-      } else {
-        print("Login fehlgeschlagen: ${data['message']}");
-      }
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['status'] == 'ok' && data.containsKey('token') && data.containsKey('hash')) {
+      final token = data['token'];
+      final userHash = data['hash'];
+      await updateToken(token);
+      
+      await _storage.write(key: 'userHash', value: userHash);
+      
+      print("Login erfolgreich, Token und Benutzer-Hash gespeichert.");
+      return token;
     } else {
-      print("Fehler beim Login: Statuscode ${response.statusCode}");
+      print("Login fehlgeschlagen: ${data['message']}");
     }
-    return null;
+  } else {
+    print("Fehler beim Login: Statuscode ${response.statusCode}");
   }
+  return null;
+}
+
 
   Future<bool> logout() async {
     final token = await getToken();
-    if (token == null) {
-      print("Benutzer ist bereits ausgeloggt oder kein Token vorhanden.");
-      return true;
-    }
 
     final response = await http.get(
-      Uri.parse('$apiUrl?request=logout&token=$token'),
+      Uri.parse('$apiUrl?request=logout&token=$token&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
@@ -100,7 +106,7 @@ class ApiService {
     }
 
     final response = await http.get(
-      Uri.parse('$apiUrl?request=deregister&token=$token'),
+      Uri.parse('$apiUrl?request=deregister&token=$token&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
@@ -123,7 +129,7 @@ class ApiService {
     if (token == null) return null;
 
     final response = await http.get(
-      Uri.parse('$apiUrl?request=getchats&token=$token'),
+      Uri.parse('$apiUrl?request=getchats&token=$token&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
@@ -144,7 +150,7 @@ class ApiService {
     if (token == null) return false;
 
     final response = await http.get(
-      Uri.parse('$apiUrl?request=deletechat&token=$token&chatid=$chatId'),
+      Uri.parse('$apiUrl?request=deletechat&token=$token&chatid=$chatId&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
@@ -160,7 +166,7 @@ class ApiService {
     if (token == null) return false;
 
     final response = await http.get(
-      Uri.parse('$apiUrl?request=createchat&token=$token&chatname=$chatName'),
+      Uri.parse('$apiUrl?request=createchat&token=$token&chatname=$chatName&${_generateRandomQuery()}'),
     );
 
     if (response.statusCode == 200) {
@@ -171,35 +177,36 @@ class ApiService {
     return false;
   }
 
-  Future<List<dynamic>?> getMessages(int chatId) async {
-    final token = await getToken();
-    if (token == null) return null;
+Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
+  final token = await getToken();
+  if (token == null) return null;
 
-    final response = await http.get(
-      Uri.parse('$apiUrl?request=getmessages&token=$token&chatid=$chatId'),
-    );
+  // Erstelle die URL mit oder ohne fromId-Parameter
+  final url = Uri.parse(
+    '$apiUrl?request=getmessages&token=$token&chatid=$chatId&${_generateRandomQuery()}' +
+    (fromId != null ? '&fromid=$fromId' : ''),
+  );
 
-    if (response.statusCode == 200) {
-      final responseBody = response.body;
-      final jsonString = responseBody.substring(responseBody.indexOf('{'));
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    print('getMessages Response body: ${response.body}');
+    final responseBody = response.body;
+
+    // Entferne HTML-Warnungen, um nur JSON zu erhalten
+    final jsonString = responseBody.substring(responseBody.indexOf('{'));
+
+    try {
       final data = jsonDecode(jsonString);
-
       if (data['status'] == 'ok' && data.containsKey('messages')) {
-        return data['messages']
-            .map((message) => {
-                  'id': message['id'],
-                  'userid': message['userid'] ?? '',
-                  'time': message['time'] ?? '',
-                  'chatid': message['chatid'] ?? 0,
-                  'text': message['text'] ?? '',
-                  'usernick': message['usernick'] ?? '',
-                  'userhash': message['userhash'] ?? '',
-                })
-            .toList();
+        return data['messages'];
       }
+    } catch (e) {
+      print("JSON Parsing Error: $e");
     }
-    return null;
   }
+  return null;
+}
 
   Future<bool> sendMessage(int chatId, String message) async {
     final token = await getToken();
@@ -218,16 +225,14 @@ class ApiService {
         'token': token,
         'text': message,
         'chatid': chatId,
+        'random': DateTime.now().millisecondsSinceEpoch,
       }),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['status'] == 'ok';
-    } else {
-      print("Fehler: Server antwortete mit Statuscode ${response.statusCode}");
-      print("Antwortinhalt: ${response.body}");
-      return false;
     }
+    return false;
   }
 }

@@ -14,7 +14,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    _loadChats(); // Lade die Chats, wenn der Bildschirm angezeigt wird
+    _loadChats();
   }
 
   Future<void> _logout() async {
@@ -36,11 +36,11 @@ class _MainScreenState extends State<MainScreen> {
           content: Text('Bist du sicher, dass du dein Konto löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false), // Abbrechen
+              onPressed: () => Navigator.pop(context, false),
               child: Text('Abbrechen'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, true), // Bestätigen
+              onPressed: () => Navigator.pop(context, true),
               child: Text('Löschen', style: TextStyle(color: Colors.red)),
             ),
           ],
@@ -49,7 +49,6 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     if (confirmed == true) {
-      // Wenn bestätigt, dann Konto löschen
       bool success = await _apiService.deregister();
       if (success) {
         Navigator.pushReplacementNamed(context, '/login');
@@ -68,22 +67,22 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  Future<void> _createChat(String chatName) async {
-    bool success = await _apiService.createChat(chatName);
-    if (success) {
-      // Füge den neuen Chat direkt zur lokalen Liste hinzu
+Future<void> _createChat(String chatName) async {
+  bool success = await _apiService.createChat(chatName);
+  if (success) {
+    final response = await _apiService.getChats();
+    final createdChat = response?.firstWhere((chat) => chat['chatname'] == chatName, orElse: () => null);
+
+    if (createdChat != null) {
       setState(() {
-        chats.add({
-          'chatid': chats.length + 1, // Dummy-ID für die Darstellung
-          'chatname': chatName,
-          'role': 'owner', // Setze den Standard-Rollenwert auf "owner"
-        });
+        chats.add(createdChat);
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chat erfolgreich erstellt')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fehler beim Erstellen des Chats')));
     }
   }
+}
 
   void _showAddChatDialog() {
     final TextEditingController chatNameController = TextEditingController();
@@ -99,7 +98,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), // Dialog schließen
+              onPressed: () => Navigator.pop(context),
               child: Text('Abbrechen'),
             ),
             TextButton(
@@ -108,7 +107,7 @@ class _MainScreenState extends State<MainScreen> {
                 if (chatName.isNotEmpty) {
                   _createChat(chatName);
                 }
-                Navigator.pop(context); // Dialog schließen
+                Navigator.pop(context);
               },
               child: Text('Erstellen'),
             ),

@@ -14,51 +14,94 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   List<dynamic> messages = [];
+  int? lastMessageId; // Speichert die ID der letzten geladenen Nachricht
 
   @override
   void initState() {
     super.initState();
-    _loadMessages(); // Lade die Nachrichten, wenn der Bildschirm angezeigt wird
+    _loadMessages(); // Lade alle Nachrichten beim Start
   }
 
-  Future<void> _loadMessages() async {
-    final fetchedMessages = await _apiService.getMessages(widget.chatId);
-    if (fetchedMessages != null) {
+  Future<void> _loadMessages({bool loadNewOnly = false}) async {
+    // Wenn `loadNewOnly` true ist, lade nur neue Nachrichten ab der letzten Nachricht-ID
+    final fetchedMessages = await _apiService.getMessages(
+      widget.chatId,
+      fromId: loadNewOnly ? lastMessageId : null,
+    );
+
+    if (fetchedMessages != null && fetchedMessages.isNotEmpty) {
       setState(() {
-        messages = fetchedMessages;
+        // Aktualisiere `lastMessageId` mit der ID der neuesten Nachricht
+        lastMessageId = fetchedMessages.last['id'];
+
+        // Füge neue Nachrichten hinzu, wenn `loadNewOnly` true ist, sonst ersetze alle
+        if (loadNewOnly) {
+          messages.addAll(fetchedMessages);
+        } else {
+          messages = fetchedMessages;
+        }
+      });
+
+      // Stelle sicher, dass der Scrollvorgang erst nach dem vollständigen Aufbau des Widgets erfolgt
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
       });
     }
   }
 
- Future<void> _sendMessage() async {
-  final messageText = _messageController.text.trim();
-  if (messageText.isEmpty) return;
+  Future<void> _sendMessage() async {
+    final messageText = _messageController.text.trim();
+    if (messageText.isEmpty) return;
 
-  // Nachricht sofort zur Liste hinzufügen
-  setState(() {
-    messages.insert(0, {
-      'id': DateTime.now().millisecondsSinceEpoch, // Temporäre ID
-      'userid': 'current_user_id', // Ersetze 'current_user_id' durch die tatsächliche Benutzer-ID, falls verfügbar
-      'time': DateTime.now().toString(),
-      'chatid': widget.chatId,
-      'text': messageText,
-      'usernick': 'Ich', // Zeigt "Ich" für den Absender an
-      'userhash': '', // Falls ein userhash benötigt wird
-    });
-  });
-
-  bool success = await _apiService.sendMessage(widget.chatId, messageText);
-  if (success) {
-    _messageController.clear();
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nachricht konnte nicht gesendet werden')));
-    // Entferne die Nachricht wieder, wenn das Senden fehlschlägt
-    setState(() {
-      messages.removeAt(0);
-    });
+    bool success = await _apiService.sendMessage(widget.chatId, messageText);
+    if (success) {
+      _messageController.clear();
+      await _loadMessages(loadNewOnly: true); // Lade nur neue Nachrichten
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nachricht konnte nicht gesendet werden')));
+    }
   }
-}
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
+  }
+
+  Widget _buildMessageBubble(Map<String, dynamic> message) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message['usernick'] ?? 'Unbekannt',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+            ),
+            SizedBox(height: 4),
+            Text(
+              message['text'] ?? '[Kein Inhalt]',
+              style: TextStyle(color: Colors.black87),
+            ),
+            SizedBox(height: 4),
+            Text(
+              message['time'] ?? '',
+              style: TextStyle(fontSize: 10, color: Colors.black45),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,15 +111,11 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Expanded(
             child: ListView.builder(
-              reverse: true, // Neueste Nachricht unten
+              controller: _scrollController,
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                return ListTile(
-                       title: Text(message['usernick'] ?? 'Unbekannt'),
-      subtitle: Text(message['text'] ?? '[Kein Inhalt]'),
-      trailing: Text(message['time'] ?? ''),
-                );
+                return _buildMessageBubble(message);
               },
             ),
           ),
