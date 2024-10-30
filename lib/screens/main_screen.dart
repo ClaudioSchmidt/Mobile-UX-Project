@@ -129,6 +129,103 @@ Future<void> _createChat(String chatName) async {
     }
   }
 
+  Future<void> _leaveChat(int chatId) async {
+  bool success = await _apiService.leaveChat(chatId);
+  if (success) {
+    setState(() {
+      chats.removeWhere((chat) => chat['chatid'] == chatId);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erfolgreich aus dem Chat ausgetreten')),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Fehler beim Austreten aus dem Chat')),
+    );
+  }
+}
+
+Future<void> _joinChat(int chatId) async {
+  bool success = await _apiService.joinChat(chatId);
+  if (success) {
+    final response = await _apiService.getChats();
+    final joinedChat = response?.firstWhere((chat) => chat['chatid'] == chatId, orElse: () => null);
+
+    if (joinedChat != null) {
+      setState(() {
+        chats.add(joinedChat);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erfolgreich dem Chat beigetreten')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fehler beim Beitritt zum Chat')),
+      );
+    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Fehler beim Beitritt zum Chat')),
+    );
+  }
+}
+
+void _showJoinChatDialog() async {
+  final availableChats = await _apiService.getChats(); // Annahme: Dies gibt auch die Chats zurück, die verfügbar sind, aber denen der User noch nicht beigetreten ist
+
+  if (availableChats == null || availableChats.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Keine verfügbaren Chats zum Beitreten')),
+    );
+    return;
+  }
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('Chat beitreten'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: availableChats.length,
+            itemBuilder: (context, index) {
+              final chat = availableChats[index];
+              final chatId = chat['chatid']; // Sicherstellen, dass chatId korrekt ist
+              print("Chat ID im Dialog: $chatId"); // Debugging: Ausgabe der Chat ID
+
+              return ListTile(
+                title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
+                trailing: ElevatedButton(
+                  onPressed: () {
+                    if (chatId != null) {
+                      print("Beitreten mit Chat ID: $chatId");
+                      _joinChat(chatId); // Aufruf der Methode zum Beitritt
+                      Navigator.of(context).pop();
+                    } else {
+                      print("Ungültige Chat ID, kann dem Chat nicht beitreten.");
+                    }
+                  },
+                  child: Text('Beitreten'),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Abbrechen'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,6 +235,10 @@ Future<void> _createChat(String chatName) async {
           IconButton(
             icon: Icon(Icons.add),
             onPressed: _showAddChatDialog,
+          ),
+          IconButton(
+            icon: Icon(Icons.group_add),
+            onPressed: _showJoinChatDialog, // Neuer Dialog zum Beitreten eines vorhandenen Chats
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -181,6 +282,19 @@ Future<void> _createChat(String chatName) async {
                   child: ListTile(
                     title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
                     subtitle: Text('Chat ID: ${chat['chatid']}'),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'leave') {
+                          _leaveChat(chat['chatid']);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'leave',
+                          child: Text('Austreten'),
+                        ),
+                      ],
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,

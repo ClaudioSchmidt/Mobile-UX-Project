@@ -162,9 +162,66 @@ Future<String?> login(String userId, String password) async {
     return false;
   }
 
-  String _generateRandomQuery() {
-    return 'random=${DateTime.now().millisecondsSinceEpoch}';
+  Future<bool> leaveChat(int chatId) async {
+  final token = await getToken();
+
+  if (token == null) {
+    print("Token ist nicht verfügbar.");
+    return false;
   }
+
+  final response = await http.get(
+    Uri.parse('$apiUrl?request=leavechat&token=$token&chatid=$chatId&${_generateRandomQuery()}'),
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['status'] == 'ok') {
+      return true;
+    } else {
+      print("Fehler beim Austreten aus dem Chat: ${data['message']}");
+    }
+  } else {
+    print("Serverfehler beim Austreten aus dem Chat: Statuscode ${response.statusCode}");
+  }
+  return false;
+}
+
+Future<bool> joinChat(int chatId) async {
+  final token = await getToken();
+
+  if (token == null) {
+    print("Token ist nicht verfügbar, kann nicht dem Chat beitreten.");
+    return false;
+  }
+
+  // Final URI für die GET-Anfrage generieren und überprüfen
+  final uri = Uri.parse('$apiUrl?request=joinchat&token=${Uri.encodeComponent(token)}&chatid=${Uri.encodeComponent(chatId.toString())}&${_generateRandomQuery()}');
+  print("Final URI: $uri");  // Debugging: Ausgabe der finalen URL
+
+  try {
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'ok') {
+        return true;
+      } else {
+        print("Fehler beim Beitritt zum Chat: ${data['message']}");
+      }
+    } else {
+      print("Serverfehler beim Beitritt zum Chat: Statuscode ${response.statusCode}");
+    }
+  } catch (e) {
+    print("Fehler bei der GET-Anfrage: $e");
+  }
+
+  return false;
+}
+
+String _generateRandomQuery() {
+  return 'random=${DateTime.now().millisecondsSinceEpoch}';
+}
 
 Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
   final token = await getToken();
