@@ -231,6 +231,54 @@ void _showJoinChatDialog() async {
   );
 }
 
+Future<void> _inviteUser(int chatId) async {
+  TextEditingController invitedHashController = TextEditingController();
+
+  // Einladungs-Dialog anzeigen, um die invitedHash zu erfassen
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('Benutzer einladen'),
+        content: TextField(
+          controller: invitedHashController,
+          decoration: InputDecoration(hintText: 'Benutzerhash eingeben'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () async {
+              String invitedHash = invitedHashController.text.trim();
+              if (invitedHash.isNotEmpty) {
+                bool success = await _apiService.inviteUser(chatId, invitedHash);
+                if (success) {
+                  // Erfolgreiche Einladung
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Einladung erfolgreich gesendet!')),
+                  );
+                  // Chatliste nach erfolgreicher Einladung erneut laden
+                  await _loadChats();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Fehler bei der Einladung')),
+                  );
+                }
+                Navigator.of(context).pop();
+              }
+            },
+            child: Text('Einladen'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -290,13 +338,19 @@ void _showJoinChatDialog() async {
                     trailing: PopupMenuButton<String>(
                       onSelected: (value) {
                         if (value == 'leave') {
-                          _leaveChat(chat['chatid']);
+                          _leaveChat(chat['chatid']);   // Chat verlassen
+                        } else if (value == 'invite') {
+                          _inviteUser(chat['chatid']);    // Benutzer einladen
                         }
                       },
                       itemBuilder: (context) => [
                         PopupMenuItem(
                           value: 'leave',
                           child: Text('Austreten'),
+                        ),
+                        PopupMenuItem(
+                          value: 'invite',
+                          child: Text('Benutzer einladen'),
                         ),
                       ],
                     ),

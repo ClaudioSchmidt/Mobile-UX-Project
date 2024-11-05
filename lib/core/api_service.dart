@@ -270,4 +270,35 @@ Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
     }
     return false;
   }
+
+  Future<bool> inviteUser(int chatId, String invitedHash) async {
+    final token = await getToken();
+
+    if (token == null) {
+      print("Token ist nicht verfügbar.");
+      return false;
+    }
+
+    // URI für die GET-Anfrage erstellen
+    final uri = Uri.parse(
+        '$apiUrl?request=invite&token=$token&chatid=$chatId&invitedhash=$invitedHash&${_generateRandomQuery()}');
+    print("Final URI: $uri");  // Debugging: Ausgabe der finalen URL
+
+    try {
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        // Debugging: Ausgabe der Serverantwort
+        print('Invite Response Body: ${response.body}');
+        final data = jsonDecode(response.body);
+        return data['status'] == 'ok';
+      } else {
+        print("Serverfehler bei der Einladung: Statuscode ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Fehler bei der GET-Anfrage: $e");
+    }
+
+    return false;
+  }
 }
