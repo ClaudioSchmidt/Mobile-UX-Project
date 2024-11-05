@@ -129,12 +129,17 @@ Future<void> _createChat(String chatName) async {
     }
   }
 
-  Future<void> _leaveChat(int chatId) async {
+Future<void> _leaveChat(int chatId) async {
   bool success = await _apiService.leaveChat(chatId);
+
   if (success) {
     setState(() {
       chats.removeWhere((chat) => chat['chatid'] == chatId);
     });
+
+    // Optional: Chatliste vom Server erneut laden
+    await _loadChats();  // Dies stellt sicher, dass der Server-Status synchron ist
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Erfolgreich aus dem Chat ausgetreten')),
     );

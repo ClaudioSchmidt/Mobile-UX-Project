@@ -177,7 +177,7 @@ Future<String?> login(String userId, String password) async {
   if (response.statusCode == 200) {
     final data = jsonDecode(response.body);
     if (data['status'] == 'ok') {
-      return true;
+      return true;  // Erfolg wird zurückgegeben
     } else {
       print("Fehler beim Austreten aus dem Chat: ${data['message']}");
     }
@@ -195,20 +195,17 @@ Future<bool> joinChat(int chatId) async {
     return false;
   }
 
-  // Final URI für die GET-Anfrage generieren und überprüfen
-  final uri = Uri.parse('$apiUrl?request=joinchat&token=${Uri.encodeComponent(token)}&chatid=${Uri.encodeComponent(chatId.toString())}&${_generateRandomQuery()}');
+  final uri = Uri.parse('$apiUrl?request=joinchat&token=$token&chatid=$chatId&${_generateRandomQuery()}');
   print("Final URI: $uri");  // Debugging: Ausgabe der finalen URL
 
   try {
     final response = await http.get(uri);
 
     if (response.statusCode == 200) {
+      // Debugging: Ausgabe der Serverantwort
+      print('Join Chat Response Body: ${response.body}');
       final data = jsonDecode(response.body);
-      if (data['status'] == 'ok') {
-        return true;
-      } else {
-        print("Fehler beim Beitritt zum Chat: ${data['message']}");
-      }
+      return data['status'] == 'ok';
     } else {
       print("Serverfehler beim Beitritt zum Chat: Statuscode ${response.statusCode}");
     }
