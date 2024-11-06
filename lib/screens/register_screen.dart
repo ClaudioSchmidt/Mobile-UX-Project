@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../core/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -23,45 +25,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (token != null) {
       // Erfolgsmeldung anzeigen
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registrierung erfolgreich!')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrierung erfolgreich!')));
       
       // Weiterleitung zum Hauptbildschirm
       Navigator.pushReplacementNamed(context, '/main');
     } else {
       // Fehlermeldung anzeigen
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registrierung fehlgeschlagen')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrierung fehlgeschlagen')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Register')),
+      appBar: AppBar(title: const Text('Register')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _userIdController,
-              decoration: InputDecoration(labelText: 'User ID'),
+              decoration: const InputDecoration(labelText: 'User ID'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             TextField(
               controller: _nicknameController,
-              decoration: InputDecoration(labelText: 'Nickname'),
+              decoration: const InputDecoration(labelText: 'Nickname'),
             ),
             TextField(
               controller: _fullNameController,
-              decoration: InputDecoration(labelText: 'Full Name'),
+              decoration: const InputDecoration(labelText: 'Full Name'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _register,
-              child: Text('Register'),
+              child: const Text('Register'),
             ),
           ],
         ),

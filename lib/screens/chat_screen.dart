@@ -5,7 +5,7 @@ class ChatScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
 
-  ChatScreen({required this.chatId, required this.chatName});
+  const ChatScreen({super.key, required this.chatId, required this.chatName});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -44,7 +44,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messageController.clear();
       await _loadMessages();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nachricht konnte nicht gesendet werden')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nachricht konnte nicht gesendet werden')));
     }
   }
 
@@ -60,8 +60,8 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.grey.shade300,
           borderRadius: BorderRadius.circular(12),
@@ -71,17 +71,17 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Text(
               message['usernick'] ?? 'Unbekannt',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               message['text'] ?? '[Kein Inhalt]',
-              style: TextStyle(color: Colors.black87),
+              style: const TextStyle(color: Colors.black87),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               message['time'] ?? '',
-              style: TextStyle(fontSize: 10, color: Colors.black45),
+              style: const TextStyle(fontSize: 10, color: Colors.black45),
             ),
           ],
         ),
@@ -112,13 +112,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Nachricht schreiben...',
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.send),
+                  icon: const Icon(Icons.send),
                   onPressed: _sendMessage,
                 ),
               ],

@@ -3,6 +3,8 @@ import '../core/api_service.dart';
 import '../screens/chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
@@ -22,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     if (success) {
       Navigator.pushReplacementNamed(context, '/login');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logout fehlgeschlagen')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logout fehlgeschlagen')));
     }
   }
 
@@ -32,16 +34,16 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Konto löschen'),
-          content: Text('Bist du sicher, dass du dein Konto löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+          title: const Text('Konto löschen'),
+          content: const Text('Bist du sicher, dass du dein Konto löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('Abbrechen'),
+              child: const Text('Abbrechen'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text('Löschen', style: TextStyle(color: Colors.red)),
+              child: const Text('Löschen', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -53,7 +55,7 @@ class _MainScreenState extends State<MainScreen> {
       if (success) {
         Navigator.pushReplacementNamed(context, '/login');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Konto konnte nicht gelöscht werden')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konto konnte nicht gelöscht werden')));
       }
     }
   }
@@ -77,9 +79,9 @@ Future<void> _createChat(String chatName) async {
       setState(() {
         chats.add(createdChat);
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chat erfolgreich erstellt')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chat erfolgreich erstellt')));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fehler beim Erstellen des Chats')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fehler beim Erstellen des Chats')));
     }
   }
 }
@@ -91,15 +93,15 @@ Future<void> _createChat(String chatName) async {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Neuen Chat erstellen'),
+          title: const Text('Neuen Chat erstellen'),
           content: TextField(
             controller: chatNameController,
-            decoration: InputDecoration(hintText: 'Chatname eingeben'),
+            decoration: const InputDecoration(hintText: 'Chatname eingeben'),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Abbrechen'),
+              child: const Text('Abbrechen'),
             ),
             TextButton(
               onPressed: () {
@@ -109,7 +111,7 @@ Future<void> _createChat(String chatName) async {
                 }
                 Navigator.pop(context);
               },
-              child: Text('Erstellen'),
+              child: const Text('Erstellen'),
             ),
           ],
         );
@@ -123,9 +125,9 @@ Future<void> _createChat(String chatName) async {
       setState(() {
         chats.removeWhere((chat) => chat['chatid'] == chatId);
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chat erfolgreich gelöscht')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chat erfolgreich gelöscht')));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fehler beim Löschen des Chats')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fehler beim Löschen des Chats')));
     }
   }
 
@@ -141,11 +143,11 @@ Future<void> _leaveChat(int chatId) async {
     await _loadChats();  // Dies stellt sicher, dass der Server-Status synchron ist
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erfolgreich aus dem Chat ausgetreten')),
+      const SnackBar(content: Text('Erfolgreich aus dem Chat ausgetreten')),
     );
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Fehler beim Austreten aus dem Chat')),
+      const SnackBar(content: Text('Fehler beim Austreten aus dem Chat')),
     );
   }
 }
@@ -161,16 +163,16 @@ Future<void> _joinChat(int chatId) async {
         chats.add(joinedChat);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erfolgreich dem Chat beigetreten')),
+        const SnackBar(content: Text('Erfolgreich dem Chat beigetreten')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler beim Beitritt zum Chat')),
+        const SnackBar(content: Text('Fehler beim Beitritt zum Chat')),
       );
     }
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Fehler beim Beitritt zum Chat')),
+      const SnackBar(content: Text('Fehler beim Beitritt zum Chat')),
     );
   }
 }
@@ -180,7 +182,7 @@ void _showJoinChatDialog() async {
 
   if (availableChats == null || availableChats.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Keine verfügbaren Chats zum Beitreten')),
+      const SnackBar(content: Text('Keine verfügbaren Chats zum Beitreten')),
     );
     return;
   }
@@ -189,7 +191,7 @@ void _showJoinChatDialog() async {
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text('Chat beitreten'),
+        title: const Text('Chat beitreten'),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -212,7 +214,7 @@ void _showJoinChatDialog() async {
                       print("Ungültige Chat ID, kann dem Chat nicht beitreten.");
                     }
                   },
-                  child: Text('Beitreten'),
+                  child: const Text('Beitreten'),
                 ),
               );
             },
@@ -223,7 +225,7 @@ void _showJoinChatDialog() async {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Abbrechen'),
+            child: const Text('Abbrechen'),
           ),
         ],
       );
@@ -239,17 +241,17 @@ Future<void> _inviteUser(int chatId) async {
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text('Benutzer einladen'),
+        title: const Text('Benutzer einladen'),
         content: TextField(
           controller: invitedHashController,
-          decoration: InputDecoration(hintText: 'Benutzerhash eingeben'),
+          decoration: const InputDecoration(hintText: 'Benutzerhash eingeben'),
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Abbrechen'),
+            child: const Text('Abbrechen'),
           ),
           TextButton(
             onPressed: () async {
@@ -259,19 +261,19 @@ Future<void> _inviteUser(int chatId) async {
                 if (success) {
                   // Erfolgreiche Einladung
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Einladung erfolgreich gesendet!')),
+                    const SnackBar(content: Text('Einladung erfolgreich gesendet!')),
                   );
                   // Chatliste nach erfolgreicher Einladung erneut laden
                   await _loadChats();
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Fehler bei der Einladung')),
+                    const SnackBar(content: Text('Fehler bei der Einladung')),
                   );
                 }
                 Navigator.of(context).pop();
               }
             },
-            child: Text('Einladen'),
+            child: const Text('Einladen'),
           ),
         ],
       );
@@ -283,14 +285,14 @@ Future<void> _inviteUser(int chatId) async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chats'),
+        title: const Text('Chats'),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             onPressed: _showAddChatDialog,
           ),
           IconButton(
-            icon: Icon(Icons.group_add),
+            icon: const Icon(Icons.group_add),
             onPressed: _showJoinChatDialog, // Neuer Dialog zum Beitreten eines vorhandenen Chats
           ),
           PopupMenuButton<String>(
@@ -302,11 +304,11 @@ Future<void> _inviteUser(int chatId) async {
               }
             },
             itemBuilder: (context) => [
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'logout',
                 child: Text('Logout'),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'deregister',
                 child: Text('Konto löschen'),
               ),
@@ -315,7 +317,7 @@ Future<void> _inviteUser(int chatId) async {
         ],
       ),
       body: chats.isEmpty
-          ? Center(child: Text('Keine Chats vorhanden'))
+          ? const Center(child: Text('Keine Chats vorhanden'))
           : ListView.builder(
               itemCount: chats.length,
               itemBuilder: (context, index) {
@@ -326,8 +328,8 @@ Future<void> _inviteUser(int chatId) async {
                   background: Container(
                     color: Colors.red,
                     alignment: Alignment.centerRight,
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Icon(Icons.delete, color: Colors.white),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   onDismissed: (direction) {
                     _deleteChat(chat['chatid']);
@@ -344,11 +346,11 @@ Future<void> _inviteUser(int chatId) async {
                         }
                       },
                       itemBuilder: (context) => [
-                        PopupMenuItem(
+                        const PopupMenuItem(
                           value: 'leave',
                           child: Text('Austreten'),
                         ),
-                        PopupMenuItem(
+                        const PopupMenuItem(
                           value: 'invite',
                           child: Text('Benutzer einladen'),
                         ),

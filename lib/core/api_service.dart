@@ -4,7 +4,7 @@ import 'constants.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  final FlutterSecureStorage _storage = FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   Future<String?> getUserHash() async {
     return await _storage.read(key: 'userHash');
