@@ -152,6 +152,93 @@ Future<void> _leaveChat(int chatId) async {
   }
 }
 
+Future<void> _showAddUserDialog(int chatId) async {
+  final profiles = await _apiService.getProfiles();
+
+  if (profiles == null || profiles.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Keine Profile verfügbar')),
+    );
+    return;
+  }
+
+  // Controller for the search input
+  final TextEditingController searchController = TextEditingController();
+  List<dynamic> filteredProfiles = profiles; // Initial display of all profiles
+
+  // Function to update filtered profiles based on search input
+  void updateFilter(String query) {
+    query = query.toLowerCase();
+    filteredProfiles = profiles.where((profile) {
+      final nickname = (profile['nickname'] ?? '').toLowerCase();
+      return nickname.contains(query);
+    }).toList();
+  }
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Benutzer hinzufügen'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Namen suchen',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (query) {
+                      setState(() {
+                        updateFilter(query);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filteredProfiles.length,
+                      itemBuilder: (context, index) {
+                        final profile = filteredProfiles[index];
+                        return ListTile(
+                          title: Text(profile['nickname'] ?? 'Benutzer ${index + 1}'),
+                          onTap: () async {
+  final success = await _apiService.inviteUserToChat(chatId, profile['hash']);
+  Navigator.of(context).pop();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(success ? 'Benutzer erfolgreich hinzugefügt' : 'Fehler beim Hinzufügen des Benutzers'))
+  );
+},
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Abbrechen'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+
+
 Future<void> _joinChat(int chatId) async {
   bool success = await _apiService.joinChat(chatId);
   if (success) {
@@ -233,54 +320,6 @@ void _showJoinChatDialog() async {
   );
 }
 
-Future<void> _inviteUser(int chatId) async {
-  TextEditingController invitedHashController = TextEditingController();
-
-  // Einladungs-Dialog anzeigen, um die invitedHash zu erfassen
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text('Benutzer einladen'),
-        content: TextField(
-          controller: invitedHashController,
-          decoration: const InputDecoration(hintText: 'Benutzerhash eingeben'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Abbrechen'),
-          ),
-          TextButton(
-            onPressed: () async {
-              String invitedHash = invitedHashController.text.trim();
-              if (invitedHash.isNotEmpty) {
-                bool success = await _apiService.inviteUser(chatId, invitedHash);
-                if (success) {
-                  // Erfolgreiche Einladung
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Einladung erfolgreich gesendet!')),
-                  );
-                  // Chatliste nach erfolgreicher Einladung erneut laden
-                  await _loadChats();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Fehler bei der Einladung')),
-                  );
-                }
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Einladen'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -338,24 +377,25 @@ Future<void> _inviteUser(int chatId) async {
                     title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
                     subtitle: Text('Chat ID: ${chat['chatid']}'),
                     trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'leave') {
-                          _leaveChat(chat['chatid']);   // Chat verlassen
-                        } else if (value == 'invite') {
-                          _inviteUser(chat['chatid']);    // Benutzer einladen
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'leave',
-                          child: Text('Austreten'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'invite',
-                          child: Text('Benutzer einladen'),
-                        ),
-                      ],
-                    ),
+  onSelected: (value) {
+    if (value == 'leave') {
+      _leaveChat(chat['chatid']);
+    } else if (value == 'add_user') {
+      _showAddUserDialog(chat['chatid']); // Dialog anzeigen
+    }
+  },
+  itemBuilder: (context) => [
+    const PopupMenuItem(
+      value: 'leave',
+      child: Text('Austreten'),
+    ),
+    const PopupMenuItem(
+      value: 'add_user',
+      child: Text('Benutzer hinzufügen'), // Benutzer hinzufügen Option
+    ),
+  ],
+),
+
                     onTap: () {
                       Navigator.push(
                         context,

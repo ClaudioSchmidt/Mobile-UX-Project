@@ -271,34 +271,46 @@ Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
     return false;
   }
 
-  Future<bool> inviteUser(int chatId, String invitedHash) async {
-    final token = await getToken();
+Future<List<dynamic>?> getProfiles() async {
+  final token = await getToken();
+  final url = Uri.parse('$apiUrl?request=getprofiles&token=$token&${_generateRandomQuery()}');
+  final response = await http.get(url);
 
-    if (token == null) {
-      print("Token ist nicht verfügbar.");
-      return false;
-    }
-
-    // URI für die GET-Anfrage erstellen
-    final uri = Uri.parse(
-        '$apiUrl?request=invite&token=$token&chatid=$chatId&invitedhash=$invitedHash&${_generateRandomQuery()}');
-    print("Final URI: $uri");  // Debugging: Ausgabe der finalen URL
-
+  if (response.statusCode == 200) {
+    print('getProfiles Response: ${response.body}');
     try {
-      final response = await http.get(uri);
+      // Decode the JSON response into a map
+      final Map<String, dynamic> data = json.decode(response.body);
 
-      if (response.statusCode == 200) {
-        // Debugging: Ausgabe der Serverantwort
-        print('Invite Response Body: ${response.body}');
-        final data = jsonDecode(response.body);
-        return data['status'] == 'ok';
-      } else {
-        print("Serverfehler bei der Einladung: Statuscode ${response.statusCode}");
-      }
+      // Access the list of profiles under the "profiles" key
+      final List<dynamic> profiles = data['profiles'] ?? [];
+      return profiles;
     } catch (e) {
-      print("Fehler bei der GET-Anfrage: $e");
+      print('Error parsing profiles: $e');
+      return null;
     }
+  } else {
+    print('Failed to load profiles: ${response.statusCode}');
+    return null;
+  }
+}
 
+Future<bool> inviteUserToChat(int chatId, String invitedHash) async {
+  final token = await getToken();
+      print('hash: ${invitedHash}');
+
+  final url = Uri.parse('$apiUrl?request=invite&token=$token&chatid=$chatId&invitedhash=$invitedHash&${_generateRandomQuery()}');
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    print('Invite Response: ${response.body}'); // Print the full response for inspection
+    return data['status'] == 'ok';
+  } else {
+    print('Failed to invite user: ${response.statusCode}');
+    print('Error Response: ${response.body}'); // Print error response details
     return false;
   }
+}
+
 }
