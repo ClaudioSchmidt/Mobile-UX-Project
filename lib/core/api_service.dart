@@ -273,7 +273,7 @@ Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
   if (token == null) return null;
 
   final url = Uri.parse(
-    '$apiUrl?request=getmessages&token=$token&chatid=$chatId${fromId != null ? '&fromid=$fromId' : ''}',
+    '$apiUrl?request=getmessages&token=$token&chatid=$chatId${fromId != null ? '&fromid=$fromId' : ''}&${_generateRandomQuery()}',
   );
 
   final response = await http.get(url);
@@ -331,28 +331,44 @@ Future<Uint8List?> getPhoto(String photoId) async {
   return null;
 }
 
-  Future<bool> sendMessage(int chatId, String message) async {
-    final token = await getToken();
 
+  Future<bool> sendMessage({
+    required int chatId,
+    String? text, // Optional: Text der Nachricht
+    String? base64Image, // Optional: Bilddaten (Base64-codiert)
+  }) async {
+    final token = await getToken(); // Dein Token-Handling
+
+    // Baue die Anfrage-Daten auf
+    final Map<String, dynamic> body = {
+      'request': 'postmessage',
+      'token': token,
+      'chatid': chatId,
+    };
+
+    if (text != null && text.isNotEmpty) {
+      body['text'] = text; // Text hinzufügen, falls vorhanden
+    }
+
+    if (base64Image != null) {
+      body['photo'] = base64Image; // Bilddaten hinzufügen, falls vorhanden
+    }
+
+    // HTTP POST-Anfrage
     final response = await http.post(
-      Uri.parse('$apiUrl'),
+      Uri.parse(apiUrl),
       headers: {
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'request': 'postmessage',
-        'token': token,
-        'text': message,
-        'chatid': chatId,
-        'random': DateTime.now().millisecondsSinceEpoch,
-      }),
+      body: jsonEncode(body),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['status'] == 'ok';
     }
+
+    print('API Error: ${response.statusCode}, ${response.body}');
     return false;
   }
-
 }
