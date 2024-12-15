@@ -8,7 +8,7 @@ class MatchmakingScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matchmaking'),
-        automaticallyImplyLeading: false, // Prevents the back arrow from showing
+        automaticallyImplyLeading: false,
       ),
       body: const Center(
         child: Text(
@@ -16,11 +16,10 @@ class MatchmakingScreen extends StatelessWidget {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
-      // Bottom Center Button
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.pop(context); // Navigate back to MainScreen
+          Navigator.pop(context);
         },
         label: const Text('Back to Chats'),
         icon: const Icon(Icons.chat),

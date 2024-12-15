@@ -1,8 +1,8 @@
-import 'dart:typed_data'; // Für Uint8List
-import 'dart:convert'; // Für Base64-Kodierung
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Für Bildauswahl
-import '../core/api_service.dart'; // Dein API-Service
+import 'package:image_picker/image_picker.dart';
+import '../core/api_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -19,7 +19,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<dynamic> messages = [];
-  Uint8List? _selectedImageBytes; // Speichert die Bilddaten
+  Uint8List? _selectedImageBytes;
 
   @override
   void initState() {
@@ -34,9 +34,28 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         messages = fetchedMessages;
       });
+
+      // Direkt zum unteren Ende springen
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
+        _scrollToBottom(initial: true);
       });
+    }
+  }
+
+  // Scrollen zum unteren Ende
+  void _scrollToBottom({bool initial = false}) {
+    if (_scrollController.hasClients) {
+      if (initial) {
+        // Beim ersten Laden direkt springen
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      } else {
+        // Bei neuen Nachrichten sanft scrollen
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     }
   }
 
@@ -46,9 +65,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      final bytes = await image.readAsBytes(); // Lese Bilddaten als Uint8List
+      final bytes = await image.readAsBytes();
       setState(() {
-        _selectedImageBytes = bytes; // Speichere Byte-Daten
+        _selectedImageBytes = bytes;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Bild ausgewählt: ${image.name}')),
@@ -64,7 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     String? base64Image;
     if (_selectedImageBytes != null) {
-      base64Image = base64Encode(_selectedImageBytes!); // Bilddaten in Base64 umwandeln
+      base64Image = base64Encode(_selectedImageBytes!);
     }
 
     bool success = await _apiService.sendMessage(
@@ -76,9 +95,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (success) {
       _messageController.clear();
       setState(() {
-        _selectedImageBytes = null; // Bildauswahl zurücksetzen
+        _selectedImageBytes = null;
       });
-      await _loadMessages(); // Nachrichtenliste neu laden
+      await _loadMessages();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nachricht konnte nicht gesendet werden')),
@@ -86,14 +105,42 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Automatisches Scrollen zum Ende
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.jumpTo(
-        _scrollController.position.maxScrollExtent,
+// Chat löschen
+Future<void> _deleteChat() async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Chat löschen'),
+      content: const Text(
+          'Bist du sicher, dass du diesen Chat löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Abbrechen'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Löschen', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    final success = await _apiService.deleteChat(widget.chatId);
+    if (success) {
+      // Chat-Liste im MainScreen aktualisieren
+      Navigator.pop(context, true); // True signalisiert erfolgreichen Abschluss
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chat erfolgreich gelöscht')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fehler beim Löschen des Chats')),
       );
     }
   }
+}
 
   // Nachricht anzeigen
   Widget _buildMessageBubble(Map<String, dynamic> message) {
@@ -124,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.memory(
-                  message['photoData'], // Byte-Daten rendern
+                  message['photoData'],
                   width: 200,
                   height: 200,
                   fit: BoxFit.cover,
@@ -145,7 +192,24 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.chatName)),
+      appBar: AppBar(
+        title: Text(widget.chatName),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'delete') {
+                _deleteChat();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Chat löschen'),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
