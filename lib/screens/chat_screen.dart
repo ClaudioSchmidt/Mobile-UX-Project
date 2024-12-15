@@ -56,39 +56,53 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> message) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message['usernick'] ?? 'Unbekannt',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
+Widget _buildMessageBubble(Map<String, dynamic> message) {
+  return Align(
+    alignment: Alignment.centerLeft,
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message['usernick'] ?? 'Unbekannt',
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+          ),
+          const SizedBox(height: 4),
+          // Text-Nachricht
+          if (message['text'] != null)
             Text(
               message['text'] ?? '[Kein Inhalt]',
               style: const TextStyle(color: Colors.black87),
             ),
-            const SizedBox(height: 4),
-            Text(
-              message['time'] ?? '',
-              style: const TextStyle(fontSize: 10, color: Colors.black45),
+          // Bild (falls vorhanden)
+          if (message['photoData'] != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.memory(
+                message['photoData'], // Uint8List-Daten direkt rendern
+                width: 200,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
             ),
           ],
-        ),
+          const SizedBox(height: 4),
+          Text(
+            message['time'] ?? '',
+            style: const TextStyle(fontSize: 10, color: Colors.black45),
+          ),
+        ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'constants.dart';
+import 'dart:typed_data';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
@@ -9,6 +10,10 @@ class ApiService {
   Future<String?> getUserHash() async {
     return await _storage.read(key: 'userHash');
   }
+
+  String _generateRandomQuery() {
+  return 'random=${DateTime.now().millisecondsSinceEpoch}';
+}
 
   Future<void> updateToken(String? token) async {
     if (token != null) {
@@ -216,61 +221,6 @@ Future<bool> joinChat(int chatId) async {
   return false;
 }
 
-String _generateRandomQuery() {
-  return 'random=${DateTime.now().millisecondsSinceEpoch}';
-}
-
-Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
-  final token = await getToken();
-  if (token == null) return null;
-
-  final url = Uri.parse(
-    '$apiUrl?request=getmessages&token=$token&chatid=$chatId&${_generateRandomQuery()}${fromId != null ? '&fromid=$fromId' : ''}',
-  );
-
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    //print('getMessages Response body: ${response.body}');
-    final responseBody = response.body;
-    final jsonString = responseBody.substring(responseBody.indexOf('{'));
-
-    try {
-      final data = jsonDecode(jsonString);
-      if (data['status'] == 'ok' && data.containsKey('messages')) {
-        return data['messages'];
-      }
-    } catch (e) {
-      print("JSON Parsing Error: $e");
-    }
-  }
-  return null;
-}
-
-  Future<bool> sendMessage(int chatId, String message) async {
-    final token = await getToken();
-
-    final response = await http.post(
-      Uri.parse('$apiUrl'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'request': 'postmessage',
-        'token': token,
-        'text': message,
-        'chatid': chatId,
-        'random': DateTime.now().millisecondsSinceEpoch,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['status'] == 'ok';
-    }
-    return false;
-  }
-
 Future<List<dynamic>?> getProfiles() async {
   final token = await getToken();
   final url = Uri.parse('$apiUrl?request=getprofiles&token=$token&${_generateRandomQuery()}');
@@ -312,5 +262,97 @@ Future<bool> inviteUserToChat(int chatId, String invitedHash) async {
     return false;
   }
 }
+
+
+
+
+
+
+Future<List<dynamic>?> getMessages(int chatId, {int? fromId}) async {
+  final token = await getToken();
+  if (token == null) return null;
+
+  final url = Uri.parse(
+    '$apiUrl?request=getmessages&token=$token&chatid=$chatId${fromId != null ? '&fromid=$fromId' : ''}',
+  );
+
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    print('getMessages Response body: ${response.body}');
+    try {
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == 'ok' && data.containsKey('messages')) {
+        List<dynamic> messages = data['messages'];
+
+        // Debug: Alle Nachrichten durchlaufen und Bilder abrufen
+        for (var message in messages) {
+          if (message.containsKey('photoid') && message['photoid'] != null) {
+            final photoId = message['photoid'];
+            print('Found photo ID: $photoId, fetching photo data...');
+            final photoData = await getPhoto(photoId);
+            if (photoData != null) {
+              // Bilddaten zur Nachricht hinzufügen
+              message['photoData'] = photoData;
+              print('Photo data added to message with ID: ${message['id']}');
+            } else {
+              print('Failed to load photo for ID: $photoId');
+            }
+          }
+        }
+        return messages;
+      }
+    } catch (e) {
+      print("JSON Parsing Error in getMessages: $e");
+    }
+  } else {
+    print('Failed to get messages, Status Code: ${response.statusCode}');
+  }
+  return null;
+}
+
+Future<Uint8List?> getPhoto(String photoId) async {
+  final token = await getToken();
+  if (token == null) return null;
+
+  final url = Uri.parse(
+    '$apiUrl?request=getphoto&token=$token&photoid=$photoId',
+  );
+
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    print('getPhoto Response: Received image data for photo ID: $photoId');
+    return response.bodyBytes; // Gibt die Bilddaten als Uint8List zurück
+  } else {
+    print('Failed to get photo with ID: $photoId, Status Code: ${response.statusCode}');
+  }
+  return null;
+}
+
+  Future<bool> sendMessage(int chatId, String message) async {
+    final token = await getToken();
+
+    final response = await http.post(
+      Uri.parse('$apiUrl'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'request': 'postmessage',
+        'token': token,
+        'text': message,
+        'chatid': chatId,
+        'random': DateTime.now().millisecondsSinceEpoch,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['status'] == 'ok';
+    }
+    return false;
+  }
 
 }
