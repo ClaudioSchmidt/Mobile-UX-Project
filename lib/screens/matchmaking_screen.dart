@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../core/api_service.dart'; // Add this import
+import 'dart:math'; // Add this import
+import 'chat_screen.dart'; // Add this import
 
 class MatchmakingScreen extends StatefulWidget {
   const MatchmakingScreen({super.key});
@@ -10,7 +13,10 @@ class MatchmakingScreen extends StatefulWidget {
 }
 
 class _MatchmakingScreenState extends State<MatchmakingScreen> {
+  final ApiService _apiService = ApiService(); // Add this line
+  List<dynamic> users = []; // Add this line
   List<LanguageSelection> selectedLanguages = [];
+  List<dynamic> chats = []; // Add this line
   bool isAutoMatchmakingEnabled = false;
 
   final List<LanguageOption> languageOptions = [
@@ -111,6 +117,160 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
     _savePreferences();
   }
 
+  Future<void> _startMatchmaking() async {
+    if (!isAutoMatchmakingEnabled) {
+      final fetchedUsers = await _apiService.getProfiles();
+      if (fetchedUsers != null) {
+        setState(() {
+          users = _mockUserProfiles(fetchedUsers);
+        });
+        _showUserSelectionDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fehler beim Laden der Benutzer')),
+        );
+      }
+    } else {
+      if (users.isEmpty) {
+        final fetchedUsers = await _apiService.getProfiles();
+        if (fetchedUsers != null) {
+          setState(() {
+            users = _mockUserProfiles(fetchedUsers);
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Fehler beim Laden der Benutzer')),
+          );
+          return;
+        }
+      }
+      _showLoadingScreen();
+      await Future.delayed(const Duration(seconds: 3)); // Mock loading time
+      final random = Random();
+      final randomUser = users[random.nextInt(users.length)];
+      final chatName = '${randomUser['nickname']} - ${randomUser['language']} (${randomUser['proficiency']})';
+      final success = await _apiService.createChat(chatName);
+      if (success) {
+        final fetchedChats = await _apiService.getChats();
+        if (fetchedChats != null) {
+          setState(() {
+            chats = fetchedChats;
+          });
+          final newChat = fetchedChats.firstWhere((chat) => chat['chatname'] == chatName);
+          Navigator.pop(context); // Close loading screen
+          Navigator.pop(context); // Close matchmaking screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                chatId: newChat['chatid'],
+                chatName: chatName,
+              ),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fehler beim Erstellen des Chats')),
+        );
+      }
+    }
+  }
+
+  void _showLoadingScreen() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  List<dynamic> _mockUserProfiles(List<dynamic> fetchedUsers) {
+    final random = Random();
+    return fetchedUsers.map((user) {
+      final randomLanguage = selectedLanguages[random.nextInt(selectedLanguages.length)];
+      final randomProficiency = randomLanguage.proficiencies[random.nextInt(randomLanguage.proficiencies.length)];
+      return {
+        ...user,
+        'language': randomLanguage.language,
+        'proficiency': randomProficiency,
+      };
+    }).toList();
+  }
+
+  void _showUserSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Benutzer auswählen'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return ListTile(
+                  title: Text(user['nickname'] ?? 'Benutzer ${index + 1}'),
+                  subtitle: Text('Sprache: ${user['language']}\nNiveau: ${user['proficiency']}'),
+                  onTap: () async {
+                    final chatName = '${user['nickname']} - ${user['language']} (${user['proficiency']})';
+                    final success = await _apiService.createChat(chatName);
+                    if (success) {
+                      final fetchedChats = await _apiService.getChats();
+                      if (fetchedChats != null) {
+                        setState(() {
+                          chats = fetchedChats;
+                        });
+                        final newChat = fetchedChats.firstWhere((chat) => chat['chatname'] == chatName);
+                        Navigator.pop(context);
+                        Navigator.pop(context); // Close matchmaking screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatScreen(
+                              chatId: newChat['chatid'],
+                              chatName: chatName,
+                            ),
+                          ),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Fehler beim Erstellen des Chats')),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool get _isMatchmakingButtonEnabled {
+    if (selectedLanguages.isEmpty) return false;
+    for (var language in selectedLanguages) {
+      if (language.proficiencies.isEmpty) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,12 +328,12 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                             onTap: _addLanguage,
                             child: Card(
                               color: Colors.grey[200],
-                              child: SizedBox(
+                              child: const SizedBox(
                                 height: 50,
                                 child: Center(
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
+                                    children: [
                                       Icon(Icons.add, color: Colors.blue),
                                       SizedBox(width: 8),
                                       Text(
@@ -248,6 +408,13 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
             ),
           ],
         ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isMatchmakingButtonEnabled ? _startMatchmaking : null,
+        label: const Text('Start Matchmaking'),
+        icon: const Icon(Icons.people),
+        backgroundColor: _isMatchmakingButtonEnabled ? null : Colors.grey,
       ),
     );
   }

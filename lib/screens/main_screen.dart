@@ -107,6 +107,21 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  Future<void> _refreshChats() async {
+    await _loadChats();
+  }
+
+  Future<String> _getLastMessage(int chatId) async {
+    final messages = await _apiService.getMessages(chatId);
+    if (messages != null && messages.isNotEmpty) {
+      final lastMessage = messages.last;
+      final sender = lastMessage['usernick'] ?? 'Unbekannt';
+      final content = lastMessage['text'] ?? 'Bildnachricht';
+      return '$sender: $content';
+    }
+    return 'Fang den ersten Schritt zum Sprachenmeister an!';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,26 +174,32 @@ class _MainScreenState extends State<MainScreen> {
                     itemCount: chats.length,
                     itemBuilder: (context, index) {
                       final chat = chats[index];
-                      return ListTile(
-                        title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
-                        subtitle: Text('Chat ID: ${chat['chatid']}'),
-                        onTap: () async {
-                          final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatScreen(
-                            chatId: chat['chatid'],
-                            chatName: chat['chatname'],
-                            ),
-                          ),
-                          );
+                      return FutureBuilder<String>(
+                        future: _getLastMessage(chat['chatid']),
+                        builder: (context, snapshot) {
+                          final lastMessage = snapshot.data ?? 'Lade...';
+                          return ListTile(
+                            title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
+                            subtitle: Text(lastMessage),
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatScreen(
+                                    chatId: chat['chatid'],
+                                    chatName: chat['chatname'],
+                                  ),
+                                ),
+                              );
 
-                          if (result == true) {
-                          await _loadChats();
-                          }
+                              if (result == true) {
+                                await _loadChats();
+                              }
+                            },
+                          );
                         },
-                        );
-                      },
+                      );
+                    },
                   ),
                 ),
         ],
@@ -186,13 +207,14 @@ class _MainScreenState extends State<MainScreen> {
       // Bottom Center Button
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const MatchmakingScreen()),
           );
+          await _refreshChats();
         },
-        label: const Text('Start Matchmaking'),
+        label: const Text('Matchmaking'),
         icon: const Icon(Icons.people),
       ),
     );

@@ -199,9 +199,15 @@ Future<void> _deleteChat() async {
             onSelected: (value) {
               if (value == 'delete') {
                 _deleteChat();
+              } else if (value == 'viewProfile') {
+                // Profile ansehen logic here
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'viewProfile',
+                child: Text('Profil ansehen'),
+              ),
               const PopupMenuItem(
                 value: 'delete',
                 child: Text('Chat löschen'),
