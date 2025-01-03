@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart'; // Add this import
+import 'dart:async'; // Add this import
 import '../core/api_service.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -20,11 +22,31 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   List<dynamic> messages = [];
   Uint8List? _selectedImageBytes;
+  String? _userHash;
+  Timer? _timer; // Add this line
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
+    _loadUserHash();
+    _startAutoRefresh(); // Add this line
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Add this line
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _loadMessages();
+    });
+  }
+
+  Future<void> _loadUserHash() async {
+    _userHash = await _apiService.getUserHash();
   }
 
   // Nachrichten laden
@@ -73,6 +95,13 @@ class _ChatScreenState extends State<ChatScreen> {
         SnackBar(content: Text('Bild ausgewählt: ${image.name}')),
       );
     }
+  }
+
+  // Bild entfernen
+  void _removeSelectedImage() {
+    setState(() {
+      _selectedImageBytes = null;
+    });
   }
 
   // Nachricht senden (Text und/oder Bild)
@@ -144,46 +173,149 @@ Future<void> _deleteChat() async {
 
   // Nachricht anzeigen
   Widget _buildMessageBubble(Map<String, dynamic> message) {
+    final isSentByMe = message['userhash'] == _userHash;
+    final alignment = isSentByMe ? Alignment.centerRight : Alignment.centerLeft;
+    final color = isSentByMe ? Colors.green[300] : Colors.grey[300];
+    final borderRadius = isSentByMe
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+            bottomLeft: Radius.circular(12),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          );
+
     return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(12),
+      alignment: alignment,
+      child: IntrinsicWidth(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: borderRadius,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isSentByMe)
+                Text(
+                  message['usernick'] ?? 'Unbekannt',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                ),
+              if (!isSentByMe) const SizedBox(height: 4),
+              if (message['text'] != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 5.0), // Adjust this value for padding
+                        child: Text(
+                          message['text'] ?? '[Kein Inhalt]',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      _formatTime(message['time']),
+                      style: const TextStyle(fontSize: 10, color: Colors.black45),
+                    ),
+                  ],
+                ),
+              if (message['photoData'] != null) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => _showImageDialog(message['photoData']),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      message['photoData'],
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Text(
+                    _formatTime(message['time']),
+                    style: const TextStyle(fontSize: 10, color: Colors.black45),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message['usernick'] ?? 'Unbekannt',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
-            if (message['text'] != null)
-              Text(
-                message['text'] ?? '[Kein Inhalt]',
-                style: const TextStyle(color: Colors.black87),
-              ),
-            if (message['photoData'] != null) ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.memory(
-                  message['photoData'],
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  void _showImageDialog(Uint8List imageData) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent, // Make the dialog background transparent
+          child: Stack(
+            children: [
+              Image.memory(imageData),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7), // Dark gray background
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
               ),
             ],
-            const SizedBox(height: 4),
-            Text(
-              message['time'] ?? '',
-              style: const TextStyle(fontSize: 10, color: Colors.black45),
-            ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatTime(String timestamp) {
+    try {
+      final dateTime = DateFormat('yyyy-MM-dd_HH-mm-ss').parse(timestamp);
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return timestamp;
+    }
+  }
+
+  String _formatDateLabel(String date) {
+    final now = DateTime.now();
+    final messageDate = DateFormat('yyyy-MM-dd').parse(date);
+    if (now.year == messageDate.year && now.month == messageDate.month && now.day == messageDate.day) {
+      return 'Heute';
+    }
+    return DateFormat('dd. MMMM yyyy').format(messageDate);
+  }
+
+  Widget _buildDateLabel(String date) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          _formatDateLabel(date),
+          style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -191,6 +323,7 @@ Future<void> _deleteChat() async {
 
   @override
   Widget build(BuildContext context) {
+    String? lastDate;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.chatName),
@@ -224,21 +357,48 @@ Future<void> _deleteChat() async {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                return _buildMessageBubble(message);
+                final messageDate = DateFormat('yyyy-MM-dd').format(DateFormat('yyyy-MM-dd_HH-mm-ss').parse(message['time']));
+                final showDateLabel = lastDate != messageDate;
+                lastDate = messageDate;
+
+                return Column(
+                  children: [
+                    if (showDateLabel) _buildDateLabel(messageDate),
+                    _buildMessageBubble(message),
+                  ],
+                );
               },
             ),
           ),
           if (_selectedImageBytes != null) // Vorschau des ausgewählten Bilds
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.memory(
-                  _selectedImageBytes!,
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      _selectedImageBytes!,
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7), // Dark gray background
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: _removeSelectedImage,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           Padding(
@@ -254,6 +414,8 @@ Future<void> _deleteChat() async {
                     controller: _messageController,
                     decoration: const InputDecoration(
                       hintText: 'Nachricht schreiben...',
+                      fillColor: Colors.transparent, // Make the input background transparent
+                      filled: true,
                     ),
                   ),
                 ),

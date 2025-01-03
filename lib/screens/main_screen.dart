@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'dart:async'; // Add this import
 import '../core/api_service.dart';
 import '../screens/account_screen.dart';
 import '../screens/settings_screen.dart';
@@ -15,11 +17,25 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> chats = [];
+  Timer? _timer; // Add this line
 
   @override
   void initState() {
     super.initState();
     _loadChats();
+    _startAutoRefresh(); // Add this line
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Add this line
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _loadChats();
+    });
   }
 
   Future<void> _logout() async {
@@ -111,15 +127,32 @@ class _MainScreenState extends State<MainScreen> {
     await _loadChats();
   }
 
-  Future<String> _getLastMessage(int chatId) async {
+  Future<Map<String, String>> _getLastMessage(int chatId) async {
     final messages = await _apiService.getMessages(chatId);
     if (messages != null && messages.isNotEmpty) {
       final lastMessage = messages.last;
       final sender = lastMessage['usernick'] ?? 'Unbekannt';
       final content = lastMessage['text'] ?? 'Bildnachricht';
-      return '$sender: $content';
+      final timestamp = lastMessage['time'] ?? '';
+      final formattedTimestamp = _formatTimestamp(timestamp);
+      return {
+        'message': '$sender: $content',
+        'timestamp': formattedTimestamp,
+      };
     }
-    return 'Fang den ersten Schritt zum Sprachenmeister an!';
+    return {
+      'message': 'Fang den ersten Schritt zum Sprachenmeister an!',
+      'timestamp': '',
+    };
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dateTime = DateFormat('yyyy-MM-dd_HH-mm-ss').parse(timestamp);
+      return DateFormat('HH:mm - dd. MMMM yyyy').format(dateTime);
+    } catch (e) {
+      return timestamp;
+    }
   }
 
   @override
@@ -174,13 +207,26 @@ class _MainScreenState extends State<MainScreen> {
                     itemCount: chats.length,
                     itemBuilder: (context, index) {
                       final chat = chats[index];
-                      return FutureBuilder<String>(
+                      return FutureBuilder<Map<String, String>>(
                         future: _getLastMessage(chat['chatid']),
                         builder: (context, snapshot) {
-                          final lastMessage = snapshot.data ?? 'Lade...';
+                          final lastMessage = snapshot.data?['message'] ?? 'Lade...';
+                          final timestamp = snapshot.data?['timestamp'] ?? '';
                           return ListTile(
                             title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
-                            subtitle: Text(lastMessage),
+                            subtitle: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    lastMessage,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(timestamp, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
                             onTap: () async {
                               final result = await Navigator.push(
                                 context,
