@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart'; // Add this import
 import 'dart:async'; // Add this import
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
 import '../core/api_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
+  final bool isFavorite; // Add this line
 
-  const ChatScreen({super.key, required this.chatId, required this.chatName});
+  const ChatScreen({super.key, required this.chatId, required this.chatName, this.isFavorite = false}); // Update this line
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -24,10 +26,12 @@ class _ChatScreenState extends State<ChatScreen> {
   Uint8List? _selectedImageBytes;
   String? _userHash;
   Timer? _timer; // Add this line
+  bool _isFavorite = false; // Add this line
 
   @override
   void initState() {
     super.initState();
+    _isFavorite = widget.isFavorite; // Add this line
     _loadMessages();
     _loadUserHash();
     _startAutoRefresh(); // Add this line
@@ -139,9 +143,9 @@ Future<void> _deleteChat() async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Chat löschen'),
+      title: const Text('Chat auflösen?'),
       content: const Text(
-          'Bist du sicher, dass du diesen Chat löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+          'Bist du sicher, dass du diesen Chat auflösen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
@@ -170,6 +174,43 @@ Future<void> _deleteChat() async {
     }
   }
 }
+
+// Chat melden
+Future<void> _reportChat() async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Chat melden'),
+      content: const Text(
+          'Bist du sicher, dass du diesen Chat melden möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Abbrechen'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Melden', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    // Implement the report functionality here
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Chat wurde gemeldet')),
+    );
+  }
+}
+
+  Future<void> _saveFavoriteStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoriteChatsString = prefs.getString('favoriteChats') ?? '{}';
+    final favoriteChats = Map<String, dynamic>.from(jsonDecode(favoriteChatsString));
+    favoriteChats[widget.chatId.toString()] = _isFavorite;
+    await prefs.setString('favoriteChats', jsonEncode(favoriteChats));
+  }
 
   // Nachricht anzeigen
   Widget _buildMessageBubble(Map<String, dynamic> message) {
@@ -328,10 +369,21 @@ Future<void> _deleteChat() async {
       appBar: AppBar(
         title: Text(widget.chatName),
         actions: [
+          IconButton(
+            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : null),
+            onPressed: () {
+              setState(() {
+                _isFavorite = !_isFavorite;
+              });
+              _saveFavoriteStatus(); // Save the favorite status
+            },
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'delete') {
                 _deleteChat();
+              } else if (value == 'report') {
+                _reportChat();
               } else if (value == 'viewProfile') {
                 // Profile ansehen logic here
               }
@@ -342,8 +394,12 @@ Future<void> _deleteChat() async {
                 child: Text('Profil ansehen'),
               ),
               const PopupMenuItem(
+                value: 'report',
+                child: Text('Profil melden'),
+              ),
+              const PopupMenuItem(
                 value: 'delete',
-                child: Text('Chat löschen'),
+                child: Text('Chat auflösen'),
               ),
             ],
           ),

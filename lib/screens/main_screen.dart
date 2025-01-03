@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async'; // Add this import
+import 'dart:convert'; // Add this import
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
 import '../core/api_service.dart';
 import '../screens/account_screen.dart';
 import '../screens/settings_screen.dart';
@@ -18,11 +20,13 @@ class _MainScreenState extends State<MainScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> chats = [];
   Timer? _timer; // Add this line
+  Map<int, bool> favoriteChats = {}; // Add this line
 
   @override
   void initState() {
     super.initState();
     _loadChats();
+    _loadFavoriteChats(); // Add this line
     _startAutoRefresh(); // Add this line
   }
 
@@ -36,6 +40,21 @@ class _MainScreenState extends State<MainScreen> {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _loadChats();
     });
+  }
+
+  Future<void> _loadFavoriteChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoriteChatsString = prefs.getString('favoriteChats') ?? '{}';
+    setState(() {
+      favoriteChats = (jsonDecode(favoriteChatsString) as Map<String, dynamic>)
+          .map((key, value) => MapEntry(int.parse(key), value));
+    });
+  }
+
+  Future<void> _saveFavoriteChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoriteChatsMap = favoriteChats.map((key, value) => MapEntry(key.toString(), value)); // Convert keys to String
+    await prefs.setString('favoriteChats', jsonEncode(favoriteChatsMap));
   }
 
   Future<void> _logout() async {
@@ -77,49 +96,6 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         chats = fetchedChats;
       });
-    }
-  }
-
-  Future<void> _createChat() async {
-    final TextEditingController chatNameController = TextEditingController();
-
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Neuen Chat erstellen'),
-          content: TextField(
-            controller: chatNameController,
-            decoration: const InputDecoration(
-              hintText: 'Gib den Chatnamen ein',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Erstellen'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true && chatNameController.text.isNotEmpty) {
-      final success = await _apiService.createChat(chatNameController.text.trim());
-      if (success) {
-        await _loadChats();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chat erfolgreich erstellt')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fehler beim Erstellen des Chats')),
-        );
-      }
     }
   }
 
@@ -172,6 +148,14 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
+          // Notification Icon
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            tooltip: 'Notifications',
+            onPressed: () {
+              // No functionality for now
+            },
+          ),
           // Settings Icon
           IconButton(
             icon: const Icon(Icons.settings),
@@ -182,12 +166,6 @@ class _MainScreenState extends State<MainScreen> {
                 MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
             },
-          ),
-          // Add Chat Icon
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Chat erstellen',
-            onPressed: _createChat,
           ),
           // Logout Icon
           IconButton(
@@ -212,8 +190,20 @@ class _MainScreenState extends State<MainScreen> {
                         builder: (context, snapshot) {
                           final lastMessage = snapshot.data?['message'] ?? 'Lade...';
                           final timestamp = snapshot.data?['timestamp'] ?? '';
+                          final isFavorite = favoriteChats[chat['chatid']] ?? false;
                           return ListTile(
-                            title: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
+                                ),
+                                if (isFavorite)
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 8.0),
+                                    child: Icon(Icons.favorite, color: Colors.red, size: 16),
+                                  ),
+                              ],
+                            ),
                             subtitle: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -234,12 +224,16 @@ class _MainScreenState extends State<MainScreen> {
                                   builder: (context) => ChatScreen(
                                     chatId: chat['chatid'],
                                     chatName: chat['chatname'],
+                                    isFavorite: isFavorite, // Pass the favorite status
                                   ),
                                 ),
                               );
 
-                              if (result == true) {
-                                await _loadChats();
+                              if (result != null && result is bool) {
+                                setState(() {
+                                  favoriteChats[chat['chatid']] = result;
+                                });
+                                await _saveFavoriteChats();
                               }
                             },
                           );

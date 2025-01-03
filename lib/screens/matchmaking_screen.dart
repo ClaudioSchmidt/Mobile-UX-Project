@@ -183,7 +183,17 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
       barrierDismissible: false,
       builder: (context) {
         return const Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.blue), // Match the color here
+              SizedBox(height: 20),
+              Text(
+                'Suche nach einem Match...',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue), // Match the color here
+              ),
+            ],
+          ),
         );
       },
     );
