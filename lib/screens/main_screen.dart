@@ -10,7 +10,10 @@ import '../screens/matchmaking_screen.dart';
 import '../screens/chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final void Function(bool) toggleTheme;
+  final bool isDarkMode;
+
+  const MainScreen({super.key, required this.toggleTheme, required this.isDarkMode});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -21,10 +24,14 @@ class _MainScreenState extends State<MainScreen> {
   List<dynamic> chats = [];
   Timer? _timer; // Add this line
   Map<int, bool> favoriteChats = {}; // Add this line
+  bool _isDarkMode;
+
+  _MainScreenState() : _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
+    _isDarkMode = widget.isDarkMode;
     _loadChats();
     _loadFavoriteChats(); // Add this line
     _startAutoRefresh(); // Add this line
@@ -137,6 +144,28 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('Ongoing Chats'),
         actions: [
+          // Theme Switch
+          Row(
+            children: [
+              Transform.scale(
+                scale: 0.65,
+                child: Switch(
+                  value: _isDarkMode,
+                  onChanged: (value) {
+                    setState(() {
+                      _isDarkMode = value;
+                    });
+                    widget.toggleTheme(value);
+                  },
+                  activeColor: Colors.black,
+                  inactiveThumbColor: Colors.blue,
+                  inactiveTrackColor: Colors.white,
+                  activeTrackColor: Colors.white,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
           // Account Icon
           IconButton(
             icon: const Icon(Icons.account_circle),

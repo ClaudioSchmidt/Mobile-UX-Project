@@ -216,7 +216,7 @@ Future<void> _reportChat() async {
   Widget _buildMessageBubble(Map<String, dynamic> message) {
     final isSentByMe = message['userhash'] == _userHash;
     final alignment = isSentByMe ? Alignment.centerRight : Alignment.centerLeft;
-    final color = isSentByMe ? Colors.green[300] : Colors.grey[300];
+    final color = isSentByMe ? Theme.of(context).chipTheme.selectedColor : Theme.of(context).chipTheme.backgroundColor;
     final borderRadius = isSentByMe
         ? const BorderRadius.only(
             topLeft: Radius.circular(12),
@@ -245,7 +245,7 @@ Future<void> _reportChat() async {
               if (!isSentByMe)
                 Text(
                   message['usernick'] ?? 'Unbekannt',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               if (!isSentByMe) const SizedBox(height: 4),
               if (message['text'] != null)
@@ -257,13 +257,13 @@ Future<void> _reportChat() async {
                         padding: const EdgeInsets.only(right: 5.0), // Adjust this value for padding
                         child: Text(
                           message['text'] ?? '[Kein Inhalt]',
-                          style: const TextStyle(color: Colors.black87),
+                          style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ),
                     ),
                     Text(
                       _formatTime(message['time']),
-                      style: const TextStyle(fontSize: 10, color: Colors.black45),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ],
                 ),
@@ -286,7 +286,7 @@ Future<void> _reportChat() async {
                   alignment: Alignment.bottomRight,
                   child: Text(
                     _formatTime(message['time']),
-                    style: const TextStyle(fontSize: 10, color: Colors.black45),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
               ],
@@ -351,12 +351,12 @@ Future<void> _reportChat() async {
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.grey[300],
+          color: Theme.of(context).chipTheme.backgroundColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           _formatDateLabel(date),
-          style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
     );
