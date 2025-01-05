@@ -7,6 +7,7 @@ import 'account_screen.dart';
 import 'settings_screen.dart';
 import 'matchmaking_screen.dart';
 import 'chat_screen.dart';
+import '../widgets/notifications_dialog.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(bool) toggleTheme; // Add this parameter
@@ -25,6 +26,46 @@ class _MainScreenState extends State<MainScreen> {
   bool _isDarkMode;
 
   _MainScreenState() : _isDarkMode = false;
+
+  // Add these new variables
+  final List<Map<String, dynamic>> _mockNotifications = [
+    {
+      'type': 'chat_request',
+      'title': 'Neue Chat-Anfrage',
+      'message': 'Sarah möchte Deutsch mit dir üben',
+      'time': DateTime.now().subtract(const Duration(minutes: 5)),
+      'read': false,
+      'actions': ['accept', 'decline']
+    },
+    {
+      'type': 'like',
+      'title': 'Neues Like',
+      'message': 'Michael hat dir ein Like gegeben',
+      'time': DateTime.now().subtract(const Duration(hours: 1)),
+      'read': false,
+    },
+    {
+      'type': 'like',
+      'title': 'Neues Like',
+      'message': 'Anna hat dir ein Like gegeben',
+      'time': DateTime.now().subtract(const Duration(hours: 2)),
+      'read': true,
+    },
+    {
+      'type': 'system',
+      'title': 'App Update verfügbar',
+      'message': 'Version 2.0 ist jetzt verfügbar mit neuen Features!',
+      'time': DateTime.now().subtract(const Duration(hours: 2)),
+      'read': true,
+    },
+    {
+      'type': 'message',
+      'title': 'Neue Nachricht',
+      'message': 'Anna: Hallo, wie geht es dir?',
+      'time': DateTime.now().subtract(const Duration(hours: 3)),
+      'read': false,
+    },
+  ];
 
   @override
   void initState() {
@@ -119,6 +160,24 @@ class _MainScreenState extends State<MainScreen> {
       return timestamp;
     }
   }
+
+  void _showNotifications(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => NotificationsDialog(
+        notifications: _mockNotifications,
+        onMarkAllRead: () {
+          setState(() {
+            for (var notification in _mockNotifications) {
+              notification['read'] = true;
+            }
+          });
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,11 +224,29 @@ class _MainScreenState extends State<MainScreen> {
           ),
           // Notification Icon
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: Stack(
+              children: [
+                const Icon(Icons.notifications),
+                if (_mockNotifications.any((n) => !n['read']))
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 12,
+                        minHeight: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             tooltip: 'Notifications',
-            onPressed: () {
-              // No functionality for now
-            },
+            onPressed: () => _showNotifications(context),
           ),
           // Settings Icon
           IconButton(
@@ -181,12 +258,6 @@ class _MainScreenState extends State<MainScreen> {
                 MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
             },
-          ),
-          // Logout Icon
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: _logout,
           ),
         ],
       ),
