@@ -184,17 +184,31 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: Colors.blue), // Match the color here
-              SizedBox(height: 20),
-              Text(
-                'Suche nach einem Match...',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue), // Match the color here
+        return Center(
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 8,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.grey), // Match the color here
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Suche nach einem Match...',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey), // Match the color here
+                  ),
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Abbrechen', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
