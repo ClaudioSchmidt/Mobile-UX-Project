@@ -166,6 +166,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
               builder: (context) => ChatScreen(
                 chatId: newChat['chatid'],
                 chatName: chatName,
+                onLikeChanged: (_) {}, // Pass a dummy callback
               ),
             ),
           );
@@ -247,6 +248,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                             builder: (context) => ChatScreen(
                               chatId: newChat['chatid'],
                               chatName: chatName,
+                              onLikeChanged: (_) {}, // Pass a dummy callback
                             ),
                           ),
                         );

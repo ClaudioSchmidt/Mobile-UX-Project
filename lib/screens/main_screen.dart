@@ -10,6 +10,7 @@ import 'chat_screen.dart';
 import '../widgets/notifications_dialog.dart';
 import '../widgets/language_badge.dart';
 import '../util/chat_name_parser.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(bool) toggleTheme; // Add this parameter
@@ -26,6 +27,7 @@ class _MainScreenState extends State<MainScreen> {
   List<dynamic> chats = [];
   Timer? _timer;
   bool _isDarkMode;
+  Set<int> likedChats = {};
 
   _MainScreenState() : _isDarkMode = false;
 
@@ -75,6 +77,7 @@ class _MainScreenState extends State<MainScreen> {
     _isDarkMode = widget.isDarkMode;
     _loadChats();
     _startAutoRefresh();
+    _loadLikedChats();
   }
 
   @override
@@ -180,6 +183,31 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Future<void> _loadLikedChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final likedChatIds = prefs.getStringList('likedChats') ?? [];
+    setState(() {
+      likedChats = likedChatIds.map(int.parse).toSet();
+    });
+  }
+
+  Future<void> _toggleLike(int chatId) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (likedChats.contains(chatId)) {
+        likedChats.remove(chatId);
+      } else {
+        likedChats.add(chatId);
+      }
+      prefs.setStringList('likedChats', likedChats.map((id) => id.toString()).toList());
+    });
+  }
+
+  Future<void> _onLikeChanged(bool isLiked) async {
+    await _loadLikedChats();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,6 +302,7 @@ class _MainScreenState extends State<MainScreen> {
                     itemBuilder: (context, index) {
                       final chat = chats[index];
                       final chatInfo = ChatNameParser.parse(chat['chatname'] ?? '');
+                      final isLiked = likedChats.contains(chat['chatid']);
                       
                       return FutureBuilder<Map<String, String>>(
                         future: _getLastMessage(chat['chatid']),
@@ -315,16 +344,25 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                               ],
                             ),
+                            trailing: IconButton(
+                              icon: Icon(
+                                isLiked ? Icons.favorite : Icons.favorite_border,
+                                color: isLiked ? Colors.red : null,
+                              ),
+                              onPressed: () => _toggleLike(chat['chatid']),
+                            ),
                             onTap: () async {
-                              final result = await Navigator.push(
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => ChatScreen(
                                     chatId: chat['chatid'],
                                     chatName: chat['chatname'],
+                                    onLikeChanged: _onLikeChanged, // Pass the callback function
                                   ),
                                 ),
                               );
+                              _refreshChats();
                             },
                           );
                         },

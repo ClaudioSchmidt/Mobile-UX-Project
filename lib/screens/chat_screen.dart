@@ -11,12 +11,14 @@ import '../widgets/date_separator.dart';
 import '../theme.dart';  // Add this import
 import '../widgets/language_badge.dart';
 import '../util/chat_name_parser.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
+  final Function(bool) onLikeChanged; // Add this parameter
 
-  const ChatScreen({super.key, required this.chatId, required this.chatName});
+  const ChatScreen({super.key, required this.chatId, required this.chatName, required this.onLikeChanged}); // Update constructor
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -30,6 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Uint8List? _selectedImageBytes;
   String? _userHash;
   Timer? _timer;
+  bool isLiked = false;
 
   @override
   void initState() {
@@ -37,6 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _loadMessages();
     _loadUserHash();
     _startAutoRefresh();
+    _loadLikedStatus();
   }
 
   @override
@@ -261,6 +265,29 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Future<void> _loadLikedStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final likedChatIds = prefs.getStringList('likedChats') ?? [];
+    setState(() {
+      isLiked = likedChatIds.contains(widget.chatId.toString());
+    });
+  }
+
+  Future<void> _toggleLike() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isLiked = !isLiked;
+      final likedChatIds = prefs.getStringList('likedChats') ?? [];
+      if (isLiked) {
+        likedChatIds.add(widget.chatId.toString());
+      } else {
+        likedChatIds.remove(widget.chatId.toString());
+      }
+      prefs.setStringList('likedChats', likedChatIds);
+    });
+    widget.onLikeChanged(isLiked); // Notify the main screen about the change
+  }
+
   @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>()!;
@@ -283,6 +310,13 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(
+              isLiked ? Icons.favorite : Icons.favorite_border,
+              color: isLiked ? Colors.red : null,
+            ),
+            onPressed: _toggleLike,
+          ),
           TextButton.icon(
             icon: const Icon(Icons.translate),
             label: Text(
