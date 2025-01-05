@@ -34,18 +34,12 @@ class IntroScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              // Register Link
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/register');
-                },
+              // Replace GestureDetector with TextButton
+              TextButton(
+                onPressed: () => Navigator.pushReplacementNamed(context, '/register'),
                 child: const Text(
-                  'Don\'t have an account? Register here',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.blue,
-                    decoration: TextDecoration.underline,
-                  ),
+                  'Noch keinen Account? Registrieren',
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ],

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../core/api_service.dart'; // Add this import
+import '../core/api_service.dart';
+// Add this import
 import 'dart:math'; // Add this import
 import 'chat_screen.dart'; // Add this import
 
@@ -319,7 +320,14 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                   if (index == selectedLanguages.length) {
                     return selectedLanguages.length >= 3
                         ? Card(
-                            color: Colors.grey[300],
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                              side: BorderSide(
+                                color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.grey,
+                              ),
+                            ),
+                            color: Theme.of(context).scaffoldBackgroundColor,
                             child: SizedBox(
                               height: 50,
                               child: Center(
@@ -328,7 +336,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.grey[700],
+                                    color: Theme.of(context).textTheme.titleMedium?.color,
                                   ),
                                 ),
                               ),
@@ -337,21 +345,31 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                         : GestureDetector(
                             onTap: _addLanguage,
                             child: Card(
-                              color: Colors.grey[200],
-                              child: const SizedBox(
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                                side: BorderSide(
+                                  color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.grey,
+                                ),
+                              ),
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              child: SizedBox(
                                 height: 50,
                                 child: Center(
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.add, color: Colors.blue),
-                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.add,
+                                        color: Theme.of(context).textTheme.titleMedium?.color,
+                                      ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         'Sprache hinzufügen',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
+                                          color: Theme.of(context).textTheme.titleMedium?.color,
                                         ),
                                       ),
                                     ],
@@ -401,10 +419,26 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                                       selectedLanguage.language, proficiency);
                                 },
                                 child: Chip(
-                                  label: Text(proficiency),
+                                  label: Text(
+                                    proficiency,
+                                    style: TextStyle(
+                                      color: isSelected 
+                                          ? Colors.white 
+                                          : Theme.of(context).textTheme.titleMedium?.color,  // Änderung hier: bodyLarge -> titleMedium
+                                    ),
+                                  ),
                                   backgroundColor: isSelected
                                       ? Colors.green
-                                      : Colors.grey[300],
+                                      : Theme.of(context).brightness == Brightness.light
+                                          ? Colors.grey[300]
+                                          : Colors.transparent,
+                                  shape: !isSelected && Theme.of(context).brightness == Brightness.dark
+                                      ? StadiumBorder(
+                                          side: BorderSide(
+                                            color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.white,  // Änderung hier: bodyLarge -> titleMedium
+                                          ),
+                                        )
+                                      : const StadiumBorder(), // Füge diese Zeile hinzu für konsistente Rundung
                                 ),
                               );
                             }).toList(),
@@ -425,6 +459,9 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
         label: const Text('Start Matchmaking'),
         icon: const Icon(Icons.people),
         backgroundColor: _isMatchmakingButtonEnabled ? null : Colors.grey,
+        foregroundColor: Theme.of(context).brightness == Brightness.light
+            ? Colors.white
+            : Colors.black,
       ),
     );
   }

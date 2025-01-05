@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'dart:async'; // Add this import
-import 'dart:convert'; // Add this import
-import 'package:shared_preferences/shared_preferences.dart'; // Add this import
+import 'dart:async';
 import '../core/api_service.dart';
-import '../screens/account_screen.dart';
-import '../screens/settings_screen.dart';
-import '../screens/matchmaking_screen.dart';
-import '../screens/chat_screen.dart';
+import '../theme.dart';  // Add this import
+import 'account_screen.dart';
+import 'settings_screen.dart';
+import 'matchmaking_screen.dart';
+import 'chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  final void Function(bool) toggleTheme;
-  final bool isDarkMode;
+  final void Function(bool) toggleTheme; // Add this parameter
+  final bool isDarkMode; // Add this parameter
 
-  const MainScreen({super.key, required this.toggleTheme, required this.isDarkMode});
+  const MainScreen({super.key, required this.toggleTheme, required this.isDarkMode}); // Update constructor
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -22,8 +21,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> chats = [];
-  Timer? _timer; // Add this line
-  Map<int, bool> favoriteChats = {}; // Add this line
+  Timer? _timer;
   bool _isDarkMode;
 
   _MainScreenState() : _isDarkMode = false;
@@ -33,35 +31,19 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _isDarkMode = widget.isDarkMode;
     _loadChats();
-    _loadFavoriteChats(); // Add this line
-    _startAutoRefresh(); // Add this line
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Add this line
+    _timer?.cancel();
     super.dispose();
   }
 
   void _startAutoRefresh() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _loadChats();
     });
-  }
-
-  Future<void> _loadFavoriteChats() async {
-    final prefs = await SharedPreferences.getInstance();
-    final favoriteChatsString = prefs.getString('favoriteChats') ?? '{}';
-    setState(() {
-      favoriteChats = (jsonDecode(favoriteChatsString) as Map<String, dynamic>)
-          .map((key, value) => MapEntry(int.parse(key), value));
-    });
-  }
-
-  Future<void> _saveFavoriteChats() async {
-    final prefs = await SharedPreferences.getInstance();
-    final favoriteChatsMap = favoriteChats.map((key, value) => MapEntry(key.toString(), value)); // Convert keys to String
-    await prefs.setString('favoriteChats', jsonEncode(favoriteChatsMap));
   }
 
   Future<void> _logout() async {
@@ -115,7 +97,7 @@ class _MainScreenState extends State<MainScreen> {
     if (messages != null && messages.isNotEmpty) {
       final lastMessage = messages.last;
       final sender = lastMessage['usernick'] ?? 'Unbekannt';
-      final content = lastMessage['text'] ?? 'Bildnachricht';
+      final content = lastMessage['text'] ?? '📷';
       final timestamp = lastMessage['time'] ?? '';
       final formattedTimestamp = _formatTimestamp(timestamp);
       return {
@@ -132,12 +114,11 @@ class _MainScreenState extends State<MainScreen> {
   String _formatTimestamp(String timestamp) {
     try {
       final dateTime = DateFormat('yyyy-MM-dd_HH-mm-ss').parse(timestamp);
-      return DateFormat('HH:mm - dd. MMMM yyyy').format(dateTime);
+      return DateFormat('HH:mm').format(dateTime);
     } catch (e) {
       return timestamp;
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,6 +128,11 @@ class _MainScreenState extends State<MainScreen> {
           // Theme Switch
           Row(
             children: [
+              Icon(
+                _isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                size: 20,
+                color: Colors.white,
+              ),
               Transform.scale(
                 scale: 0.65,
                 child: Switch(
@@ -158,7 +144,7 @@ class _MainScreenState extends State<MainScreen> {
                     widget.toggleTheme(value);
                   },
                   activeColor: Colors.black,
-                  inactiveThumbColor: Colors.blue,
+                  inactiveThumbColor: const Color(0xFF9C27B0),
                   inactiveTrackColor: Colors.white,
                   activeTrackColor: Colors.white,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -219,18 +205,12 @@ class _MainScreenState extends State<MainScreen> {
                         builder: (context, snapshot) {
                           final lastMessage = snapshot.data?['message'] ?? 'Lade...';
                           final timestamp = snapshot.data?['timestamp'] ?? '';
-                          final isFavorite = favoriteChats[chat['chatid']] ?? false;
                           return ListTile(
                             title: Row(
                               children: [
                                 Expanded(
                                   child: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
                                 ),
-                                if (isFavorite)
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 8.0),
-                                    child: Icon(Icons.favorite, color: Colors.red, size: 16),
-                                  ),
                               ],
                             ),
                             subtitle: Row(
@@ -253,17 +233,9 @@ class _MainScreenState extends State<MainScreen> {
                                   builder: (context) => ChatScreen(
                                     chatId: chat['chatid'],
                                     chatName: chat['chatname'],
-                                    isFavorite: isFavorite, // Pass the favorite status
                                   ),
                                 ),
                               );
-
-                              if (result != null && result is bool) {
-                                setState(() {
-                                  favoriteChats[chat['chatid']] = result;
-                                });
-                                await _saveFavoriteChats();
-                              }
                             },
                           );
                         },
@@ -273,7 +245,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
         ],
       ),
-      // Bottom Center Button
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -285,6 +256,10 @@ class _MainScreenState extends State<MainScreen> {
         },
         label: const Text('Matchmaking'),
         icon: const Icon(Icons.people),
+        backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
+        foregroundColor: Theme.of(context).brightness == Brightness.light 
+            ? Colors.white 
+            : Colors.black,
       ),
     );
   }

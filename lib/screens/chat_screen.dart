@@ -2,17 +2,19 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart'; // Add this import
-import 'dart:async'; // Add this import
-import 'package:shared_preferences/shared_preferences.dart'; // Add this import
+import 'dart:async';
 import '../core/api_service.dart';
+import '../widgets/chat_bubble.dart';
+import '../core/translation_service.dart';
+import 'package:intl/intl.dart';
+import '../widgets/date_separator.dart';
+import '../theme.dart';  // Add this import
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
-  final bool isFavorite; // Add this line
 
-  const ChatScreen({super.key, required this.chatId, required this.chatName, this.isFavorite = false}); // Update this line
+  const ChatScreen({super.key, required this.chatId, required this.chatName});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -25,26 +27,25 @@ class _ChatScreenState extends State<ChatScreen> {
   List<dynamic> messages = [];
   Uint8List? _selectedImageBytes;
   String? _userHash;
-  Timer? _timer; // Add this line
-  bool _isFavorite = false; // Add this line
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _isFavorite = widget.isFavorite; // Add this line
     _loadMessages();
     _loadUserHash();
-    _startAutoRefresh(); // Add this line
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Add this line
+    _timer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _startAutoRefresh() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _loadMessages();
     });
   }
@@ -53,39 +54,28 @@ class _ChatScreenState extends State<ChatScreen> {
     _userHash = await _apiService.getUserHash();
   }
 
-  // Nachrichten laden
   Future<void> _loadMessages() async {
     final fetchedMessages = await _apiService.getMessages(widget.chatId);
     if (fetchedMessages != null) {
       setState(() {
         messages = fetchedMessages;
       });
-
-      // Direkt zum unteren Ende springen
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom(initial: true);
-      });
+      // Delay the scroll to ensure the layout is complete
+      await Future.delayed(const Duration(milliseconds: 100));
+      _scrollToBottom();
     }
   }
 
-  // Scrollen zum unteren Ende
-  void _scrollToBottom({bool initial = false}) {
+  void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      if (initial) {
-        // Beim ersten Laden direkt springen
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      } else {
-        // Bei neuen Nachrichten sanft scrollen
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 1),
+        curve: Curves.easeOut,
+      );
     }
   }
 
-  // Bildauswahl-Logik
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -101,14 +91,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Bild entfernen
   void _removeSelectedImage() {
     setState(() {
       _selectedImageBytes = null;
     });
   }
 
-  // Nachricht senden (Text und/oder Bild)
   Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
 
@@ -131,6 +119,9 @@ class _ChatScreenState extends State<ChatScreen> {
         _selectedImageBytes = null;
       });
       await _loadMessages();
+      // Add extra scroll after new message
+      await Future.delayed(const Duration(milliseconds: 100));
+      _scrollToBottom();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nachricht konnte nicht gesendet werden')),
@@ -138,171 +129,112 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-// Chat löschen
-Future<void> _deleteChat() async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Chat auflösen?'),
-      content: const Text(
-          'Bist du sicher, dass du diesen Chat auflösen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Abbrechen'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Löschen', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ),
-  );
+  Future<void> _deleteChat() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Chat auflösen?'),
+        content: const Text(
+            'Bist du sicher, dass du diesen Chat auflösen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Löschen', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
 
-  if (confirmed == true) {
-    final success = await _apiService.deleteChat(widget.chatId);
-    if (success) {
-      // Chat-Liste im MainScreen aktualisieren
-      Navigator.pop(context, true); // True signalisiert erfolgreichen Abschluss
+    if (confirmed == true) {
+      final success = await _apiService.deleteChat(widget.chatId);
+      if (success) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chat erfolgreich gelöscht')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fehler beim Löschen des Chats')),
+        );
+      }
+    }
+  }
+
+  Future<void> _reportChat() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Chat melden'),
+        content: const Text(
+            'Bist du sicher, dass du diesen Chat melden möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Melden', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chat erfolgreich gelöscht')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fehler beim Löschen des Chats')),
+        const SnackBar(content: Text('Chat wurde gemeldet')),
       );
     }
   }
-}
 
-// Chat melden
-Future<void> _reportChat() async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Chat melden'),
-      content: const Text(
-          'Bist du sicher, dass du diesen Chat melden möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Abbrechen'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Melden', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ),
-  );
+  String _formatDate(String timestamp) {
+    final dateTime = DateFormat('yyyy-MM-dd_HH-mm-ss').parse(timestamp);
+    final now = DateTime.now();
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
 
-  if (confirmed == true) {
-    // Implement the report functionality here
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chat wurde gemeldet')),
-    );
-  }
-}
-
-  Future<void> _saveFavoriteStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final favoriteChatsString = prefs.getString('favoriteChats') ?? '{}';
-    final favoriteChats = Map<String, dynamic>.from(jsonDecode(favoriteChatsString));
-    favoriteChats[widget.chatId.toString()] = _isFavorite;
-    await prefs.setString('favoriteChats', jsonEncode(favoriteChats));
+    if (dateTime.year == now.year && 
+        dateTime.month == now.month && 
+        dateTime.day == now.day) {
+      return 'Heute';
+    } else if (dateTime.year == yesterday.year && 
+               dateTime.month == yesterday.month && 
+               dateTime.day == yesterday.day) {
+      return 'Gestern';
+    }
+    return DateFormat('dd.MM.yyyy').format(dateTime);
   }
 
-  // Nachricht anzeigen
-  Widget _buildMessageBubble(Map<String, dynamic> message) {
-    final isSentByMe = message['userhash'] == _userHash;
-    final alignment = isSentByMe ? Alignment.centerRight : Alignment.centerLeft;
-    final color = isSentByMe ? Theme.of(context).chipTheme.selectedColor : Theme.of(context).chipTheme.backgroundColor;
-    final borderRadius = isSentByMe
-        ? const BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
-            bottomLeft: Radius.circular(12),
-          )
-        : const BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          );
+  String? _getMessageDate(int index) {
+    if (index >= messages.length) return null;
+    final currentDate = DateFormat('yyyy-MM-dd_HH-mm-ss')
+        .parse(messages[index]['time'])
+        .toLocal();
+    
+    if (index == 0) return _formatDate(messages[index]['time']);
 
-    return Align(
-      alignment: alignment,
-      child: IntrinsicWidth(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: borderRadius,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isSentByMe)
-                Text(
-                  message['usernick'] ?? 'Unbekannt',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              if (!isSentByMe) const SizedBox(height: 4),
-              if (message['text'] != null)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 5.0), // Adjust this value for padding
-                        child: Text(
-                          message['text'] ?? '[Kein Inhalt]',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _formatTime(message['time']),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
-              if (message['photoData'] != null) ...[
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => _showImageDialog(message['photoData']),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(
-                      message['photoData'],
-                      width: 200,
-                      height: 200,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Text(
-                    _formatTime(message['time']),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
+    final previousDate = DateFormat('yyyy-MM-dd_HH-mm-ss')
+        .parse(messages[index - 1]['time'])
+        .toLocal();
+
+    if (currentDate.year != previousDate.year || 
+        currentDate.month != previousDate.month || 
+        currentDate.day != previousDate.day) {
+      return _formatDate(messages[index]['time']);
+    }
+    return null;
   }
 
-  void _showImageDialog(Uint8List imageData) {
+  void _showImageDialog(BuildContext context, Uint8List imageData) {
+    final customColors = Theme.of(context).extension<CustomColors>()!;
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          backgroundColor: Colors.transparent, // Make the dialog background transparent
+          backgroundColor: customColors.imageDialogBackground,
           child: Stack(
             children: [
               Image.memory(imageData),
@@ -311,11 +243,11 @@ Future<void> _reportChat() async {
                 right: 8,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7), // Dark gray background
+                    color: customColors.closeButtonBackground,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: Icon(Icons.close, color: customColors.primaryText),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -327,56 +259,24 @@ Future<void> _reportChat() async {
     );
   }
 
-  String _formatTime(String timestamp) {
-    try {
-      final dateTime = DateFormat('yyyy-MM-dd_HH-mm-ss').parse(timestamp);
-      return DateFormat('HH:mm').format(dateTime);
-    } catch (e) {
-      return timestamp;
-    }
-  }
-
-  String _formatDateLabel(String date) {
-    final now = DateTime.now();
-    final messageDate = DateFormat('yyyy-MM-dd').parse(date);
-    if (now.year == messageDate.year && now.month == messageDate.month && now.day == messageDate.day) {
-      return 'Heute';
-    }
-    return DateFormat('dd. MMMM yyyy').format(messageDate);
-  }
-
-  Widget _buildDateLabel(String date) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).chipTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          _formatDateLabel(date),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    String? lastDate;
+    final customColors = Theme.of(context).extension<CustomColors>()!;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.chatName),
         actions: [
-          IconButton(
-            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : null),
-            onPressed: () {
-              setState(() {
-                _isFavorite = !_isFavorite;
-              });
-              _saveFavoriteStatus(); // Save the favorite status
-            },
+          TextButton.icon(
+            icon: const Icon(Icons.translate),
+            label: Text(
+              TranslationService.currentLanguage.toUpperCase(),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            onPressed: () => _showLanguageSelector(),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -413,20 +313,21 @@ Future<void> _reportChat() async {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                final messageDate = DateFormat('yyyy-MM-dd').format(DateFormat('yyyy-MM-dd_HH-mm-ss').parse(message['time']));
-                final showDateLabel = lastDate != messageDate;
-                lastDate = messageDate;
-
+                final dateSeparator = _getMessageDate(index);
                 return Column(
                   children: [
-                    if (showDateLabel) _buildDateLabel(messageDate),
-                    _buildMessageBubble(message),
+                    if (dateSeparator != null)
+                      DateSeparator(date: dateSeparator),
+                    ChatBubble(
+                      message: message,
+                      userHash: _userHash,
+                    ),
                   ],
                 );
               },
             ),
           ),
-          if (_selectedImageBytes != null) // Vorschau des ausgewählten Bilds
+          if (_selectedImageBytes != null)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Stack(
@@ -445,11 +346,11 @@ Future<void> _reportChat() async {
                     right: 0,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7), // Dark gray background
+                        color: customColors.closeButtonBackground,
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: Icon(Icons.close, color: customColors.primaryText),
                         onPressed: _removeSelectedImage,
                       ),
                     ),
@@ -463,16 +364,19 @@ Future<void> _reportChat() async {
               children: [
                 IconButton(
                   icon: const Icon(Icons.photo),
-                  onPressed: _pickImage, // Bildauswahl starten
+                  onPressed: _pickImage,
                 ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
                     decoration: const InputDecoration(
                       hintText: 'Nachricht schreiben...',
-                      fillColor: Colors.transparent, // Make the input background transparent
+                      fillColor: Colors.transparent,
                       filled: true,
                     ),
+                    // Add these properties:
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 IconButton(
@@ -481,6 +385,43 @@ Future<void> _reportChat() async {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLanguageSelector() {
+    final customColors = Theme.of(context).extension<CustomColors>()!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Übersetzungssprache'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: TranslationService.supportedLanguages.entries.map((entry) {
+              return ListTile(
+                title: Text(entry.value),
+                trailing: entry.key == TranslationService.currentLanguage
+                    ? Icon(Icons.check, color: customColors.success)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    TranslationService.currentLanguage = entry.key;
+                    // Trigger rebuild of all chat bubbles
+                    messages = List.from(messages);
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Abbrechen', style: TextStyle(color: customColors.primaryText)),
           ),
         ],
       ),

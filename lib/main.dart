@@ -9,10 +9,12 @@ import 'screens/account_screen.dart';
 import 'screens/settings_screen.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -40,6 +42,9 @@ class _MyAppState extends State<MyApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: _themeMode,
+      builder: (context, child) {
+        return child!;
+      },
       initialRoute: '/intro',
       routes: {
         '/intro': (context) => const IntroScreen(),
