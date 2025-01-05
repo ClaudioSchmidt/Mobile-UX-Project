@@ -8,6 +8,8 @@ import 'settings_screen.dart';
 import 'matchmaking_screen.dart';
 import 'chat_screen.dart';
 import '../widgets/notifications_dialog.dart';
+import '../widgets/language_badge.dart';
+import '../util/chat_name_parser.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(bool) toggleTheme; // Add this parameter
@@ -271,6 +273,8 @@ class _MainScreenState extends State<MainScreen> {
                     itemCount: chats.length,
                     itemBuilder: (context, index) {
                       final chat = chats[index];
+                      final chatInfo = ChatNameParser.parse(chat['chatname'] ?? '');
+                      
                       return FutureBuilder<Map<String, String>>(
                         future: _getLastMessage(chat['chatid']),
                         builder: (context, snapshot) {
@@ -278,10 +282,18 @@ class _MainScreenState extends State<MainScreen> {
                           final timestamp = snapshot.data?['timestamp'] ?? '';
                           return ListTile(
                             title: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: Text(chat['chatname'] ?? 'Chat ${index + 1}'),
-                                ),
+                                Text(chatInfo.displayName),
+                                if (chatInfo.languageCode != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: LanguageBadge(
+                                      languageCode: chatInfo.languageCode!,
+                                      languageName: chatInfo.languageName!,
+                                      level: chatInfo.level!,
+                                    ),
+                                  ),
                               ],
                             ),
                             subtitle: Row(
@@ -294,7 +306,13 @@ class _MainScreenState extends State<MainScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Text(timestamp, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 16),
+                                  child: Text(
+                                    timestamp, 
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey)
+                                  ),
+                                ),
                               ],
                             ),
                             onTap: () async {

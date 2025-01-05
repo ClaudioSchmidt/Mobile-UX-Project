@@ -14,9 +14,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
-  String _selectedTheme = 'system';
-  String _appLanguage = 'English';
-  String _defaultTranslationLanguage = 'English';
+  final String _selectedTheme = 'system';
+  final String _appLanguage = 'English';
+  final String _defaultTranslationLanguage = 'English';
   bool _autoTranslate = false;
   int _fontSize = 16;
   bool _autoCorrect = true;

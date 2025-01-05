@@ -50,7 +50,7 @@ class NotificationsDialog extends StatelessWidget {
           maxHeight: MediaQuery.of(context).size.height * 0.8,
           maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
-        child: Container(
+        child: SizedBox(
           width: 400,
           child: Column(
             mainAxisSize: MainAxisSize.min,

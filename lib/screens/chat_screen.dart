@@ -9,6 +9,8 @@ import '../core/translation_service.dart';
 import 'package:intl/intl.dart';
 import '../widgets/date_separator.dart';
 import '../theme.dart';  // Add this import
+import '../widgets/language_badge.dart';
+import '../util/chat_name_parser.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -262,10 +264,24 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>()!;
+    final chatInfo = ChatNameParser.parse(widget.chatName);
     
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.chatName),
+        title: Row(
+          children: [
+            Text(chatInfo.displayName),
+            if (chatInfo.languageCode != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: LanguageBadge(
+                  languageCode: chatInfo.languageCode!,
+                  languageName: chatInfo.languageName!,
+                  level: chatInfo.level!,
+                ),
+              ),
+          ],
+        ),
         actions: [
           TextButton.icon(
             icon: const Icon(Icons.translate),
