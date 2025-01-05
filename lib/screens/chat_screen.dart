@@ -310,13 +310,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              isLiked ? Icons.favorite : Icons.favorite_border,
-              color: isLiked ? Colors.red : null,
-            ),
-            onPressed: _toggleLike,
-          ),
           TextButton.icon(
             icon: const Icon(Icons.translate),
             label: Text(
@@ -327,6 +320,13 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             onPressed: () => _showLanguageSelector(),
+          ),
+          IconButton(
+            icon: Icon(
+              isLiked ? Icons.favorite : Icons.favorite_border,
+              color: isLiked ? Colors.red : null,
+            ),
+            onPressed: _toggleLike,
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
