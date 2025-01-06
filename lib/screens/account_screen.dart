@@ -1,27 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AccountScreen extends StatefulWidget {
+class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
-
-  @override
-  State<AccountScreen> createState() => _AccountScreenState();
-}
-
-class _AccountScreenState extends State<AccountScreen> {
-  bool isLiked = false; // Mock-Zustand für den Like-Button
-  int likeCount = 42; // Mock-Wert für die Anzahl der Likes
-
-  void toggleLike() {
-    setState(() {
-      if (isLiked) {
-        isLiked = false;
-        likeCount--;
-      } else {
-        isLiked = true;
-        likeCount++;
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +16,9 @@ class _AccountScreenState extends State<AccountScreen> {
           children: [
             // Profile Section
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CircleAvatar(
                       radius: 60, // Größeres Profilbild
@@ -64,53 +43,51 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'juhoit00',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 32), // Mehr Abstand zwischen Profilbild und Texten
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 16), // Vertikaler Abstand hinzugefügt
+                      Text(
+                        'juhoit00',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'juhoit00@hs-esslingen.de',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
+                      SizedBox(height: 4),
+                      Text(
+                        'juhoit00@hs-esslingen.de',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                            size: 24, // Herzgröße
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            '42 likes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-
-            // Like Section
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: toggleLike,
-                  icon: Icon(
-                    isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: isLiked ? Colors.red : Colors.grey,
-                    size: 28,
-                  ),
-                ),
-                Text(
-                  '$likeCount likes',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
 
             // Bio Section
             const Text(
@@ -130,7 +107,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
-                'I love learning languages!',
+                'I love to learn new languages!',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
@@ -167,6 +144,14 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Current Password',
+                      border: OutlineInputBorder(),
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     decoration: const InputDecoration(
                       labelText: 'New Password',
