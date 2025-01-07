@@ -219,10 +219,12 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
     return fetchedUsers.map((user) {
       final randomLanguage = selectedLanguages[random.nextInt(selectedLanguages.length)];
       final randomProficiency = randomLanguage.proficiencies[random.nextInt(randomLanguage.proficiencies.length)];
+      final randomLikes = random.nextInt(50);
       return {
         ...user,
         'language': randomLanguage.language,
         'proficiency': randomProficiency,
+        'likes': randomLikes,
       };
     }).toList();
   }
@@ -241,8 +243,25 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
               itemBuilder: (context, index) {
                 final user = users[index];
                 return ListTile(
-                  title: Text(user['nickname'] ?? 'Benutzer ${index + 1}'),
-                  subtitle: Text('Sprache: ${user['language']}\nNiveau: ${user['proficiency']}'),
+                  title: Text(user['nickname'] ?? 'User ${index + 1}'),
+                  subtitle: Text('Language: ${user['language']}\nLevel: ${user['proficiency']}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${user['likes']}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.favorite,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                    ],
+                  ),
                   onTap: () async {
                     final chatName = '${user['nickname']} - ${user['language']} (${user['proficiency']})';
                     final success = await _apiService.createChat(chatName);

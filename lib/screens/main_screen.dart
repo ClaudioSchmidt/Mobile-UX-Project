@@ -28,7 +28,8 @@ class _MainScreenState extends State<MainScreen> {
   Timer? _timer;
   bool _isDarkMode;
   Set<int> likedChats = {};
-  String? userNick; // Add this line
+  String? userNick;
+  bool _showMainChat = false;
 
   _MainScreenState() : _isDarkMode = false;
 
@@ -78,7 +79,7 @@ class _MainScreenState extends State<MainScreen> {
     _loadChats();
     _startAutoRefresh();
     _loadLikedChats();
-    _loadUserNick(); // Add this line
+    _loadUserNick();
   }
 
   @override
@@ -209,7 +210,6 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {});
   }
 
-  // Add this method
   Future<void> _loadUserNick() async {
     final hash = await _apiService.getUserHash();
     final profiles = await _apiService.getProfiles();
@@ -229,6 +229,14 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Welcome, ${userNick ?? '...'}'),
+        leading: IconButton(
+          icon: Icon(_showMainChat ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+          onPressed: () {
+            setState(() {
+              _showMainChat = !_showMainChat;
+            });
+          },
+        ),
         actions: [
           Row(
             children: [
@@ -292,7 +300,6 @@ class _MainScreenState extends State<MainScreen> {
             tooltip: 'Notifications',
             onPressed: () => _showNotifications(context),
           ),
-          // Settings Icon
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
@@ -308,82 +315,100 @@ class _MainScreenState extends State<MainScreen> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          chats.isEmpty
-              ? const Center(child: Text('No chats yet. Start matchmaking!'))
-              : Expanded(
-                  child: ListView.builder(
-                    itemCount: chats.length,
-                    itemBuilder: (context, index) {
-                      final chat = chats[index];
-                      final chatInfo = ChatNameParser.parse(chat['chatname'] ?? '');
-                      final isLiked = likedChats.contains(chat['chatid']);
-                      
-                      return FutureBuilder<Map<String, String>>(
-                        future: _getLastMessage(chat['chatid']),
-                        builder: (context, snapshot) {
-                          final lastMessage = snapshot.data?['message'] ?? 'Loading...';
-                          final timestamp = snapshot.data?['timestamp'] ?? '';
-                          return ListTile(
-                            title: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(chatInfo.displayName),
-                                if (chatInfo.languageCode != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: LanguageBadge(
-                                      languageCode: chatInfo.languageCode!,
-                                      languageName: chatInfo.languageName!,
-                                      level: chatInfo.level!,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            subtitle: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    lastMessage,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final visibleChats = chats.where((chat) => 
+                  _showMainChat || chat['chatname'] != 'Main Chat'
+                ).toList();
+
+                if (visibleChats.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No chats yet. Start matchmaking!',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: chats.length,
+                  itemBuilder: (context, index) {
+                    final chat = chats[index];
+                    if (!_showMainChat && chat['chatname'] == 'Main Chat') {
+                      return const SizedBox.shrink();
+                    }
+                    final chatInfo = ChatNameParser.parse(chat['chatname'] ?? '');
+                    final isLiked = likedChats.contains(chat['chatid']);
+                    
+                    return FutureBuilder<Map<String, String>>(
+                      future: _getLastMessage(chat['chatid']),
+                      builder: (context, snapshot) {
+                        final lastMessage = snapshot.data?['message'] ?? 'Loading...';
+                        final timestamp = snapshot.data?['timestamp'] ?? '';
+                        return ListTile(
+                          title: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(chatInfo.displayName),
+                              if (chatInfo.languageCode != null)
                                 Padding(
-                                  padding: const EdgeInsets.only(left: 16),
-                                  child: Text(
-                                    timestamp, 
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey)
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: LanguageBadge(
+                                    languageCode: chatInfo.languageCode!,
+                                    languageName: chatInfo.languageName!,
+                                    level: chatInfo.level!,
                                   ),
                                 ),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(
-                                isLiked ? Icons.favorite : Icons.favorite_border,
-                                color: isLiked ? Colors.red : null,
+                            ],
+                          ),
+                          subtitle: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  lastMessage,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              onPressed: () => _toggleLike(chat['chatid']),
-                            ),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    chatId: chat['chatid'],
-                                    chatName: chat['chatname'],
-                                    onLikeChanged: _onLikeChanged,
-                                  ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  timestamp, 
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey)
                                 ),
-                              );
-                              _refreshChats();
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
+                              ),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: isLiked ? Colors.red : null,
+                            ),
+                            onPressed: () => _toggleLike(chat['chatid']),
+                          ),
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  chatId: chat['chatid'],
+                                  chatName: chat['chatname'],
+                                  onLikeChanged: _onLikeChanged,
+                                ),
+                              ),
+                            );
+                            _refreshChats();
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
