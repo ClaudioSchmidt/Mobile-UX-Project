@@ -56,7 +56,6 @@ class _ChatBubbleState extends State<ChatBubble> with SingleTickerProviderStateM
   @override
   void didUpdateWidget(ChatBubble oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Retranslate if translation is active and language changed
     if (_translatedText != null && 
         _lastUsedLanguage != TranslationService.currentLanguage) {
       _translateMessage();
@@ -86,8 +85,8 @@ class _ChatBubbleState extends State<ChatBubble> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxBubbleWidth = screenWidth * 0.8;
-    const maxImageHeight = 300.0;  // Maximum height for images
-    final maxImageWidth = maxBubbleWidth - 24.0;  // Accounting for padding
+    const maxImageHeight = 300.0;
+    final maxImageWidth = maxBubbleWidth - 24.0;
 
     final isSentByMe = widget.message['userhash'] == widget.userHash;
     final alignment = isSentByMe ? Alignment.centerRight : Alignment.centerLeft;
@@ -138,7 +137,7 @@ class _ChatBubbleState extends State<ChatBubble> with SingleTickerProviderStateM
                     children: [
                       if (!isSentByMe) ...[
                         Text(
-                          widget.message['usernick'] ?? 'Unbekannt',
+                          widget.message['usernick'] ?? 'Unknown',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 4),

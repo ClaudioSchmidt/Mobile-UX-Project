@@ -20,17 +20,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final token = await _apiService.login(userId, password);
 
     if (token != null) {
-      // Erfolgsmeldung anzeigen
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login erfolgreich!')),
+        const SnackBar(content: Text('Login successful')),
       );
-
-      // Weiterleitung zum Hauptbildschirm
       Navigator.pushReplacementNamed(context, '/main');
     } else {
-      // Fehlermeldung anzeigen
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login fehlgeschlagen')),
+        const SnackBar(content: Text('Login failed')),
       );
     }
   }
@@ -65,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pushNamed(context, '/register'),
-              child: const Text('Noch keinen Account? Registrieren'),
+              child: const Text('Don’t have an account? Register'),
             ),
           ],
         ),

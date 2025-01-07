@@ -32,9 +32,9 @@ class NotificationsDialog extends StatelessWidget {
     final difference = now.difference(time);
 
     if (difference.inMinutes < 60) {
-      return 'vor ${difference.inMinutes} Minuten';
+      return '${difference.inMinutes} minutes ago';
     } else if (difference.inHours < 24) {
-      return 'vor ${difference.inHours} Stunden';
+      return '${difference.inHours} hours ago';
     } else {
       return DateFormat('dd.MM.yy HH:mm').format(time);
     }
@@ -61,7 +61,7 @@ class NotificationsDialog extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Benachrichtigungen',
+                      'Notifications',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -74,7 +74,7 @@ class NotificationsDialog extends StatelessWidget {
                             onMarkAllRead();
                             Navigator.pop(context);
                           },
-                          child: const Text('Alle gelesen'),
+                          child: const Text('Read all'),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
@@ -110,12 +110,12 @@ class NotificationsDialog extends StatelessWidget {
                               children: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: Text('Annehmen', 
+                                  child: Text('Accept', 
                                     style: TextStyle(color: customColors.success)),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text('Ablehnen', 
+                                  child: const Text('Reject', 
                                     style: TextStyle(color: Colors.red)),
                                 ),
                               ],

@@ -124,9 +124,9 @@ final _lightCustomColors = CustomColors(
 
 // Dark theme custom colors
 final _darkCustomColors = CustomColors(
-  translationIconActive: const Color(0xFFCE93D8),    // Light violet
+  translationIconActive: const Color(0xFFCE93D8),
   translationIconInactive: Colors.grey,
-  translationBackground: const Color(0xFF4A148C),    // Dark violet
+  translationBackground: const Color(0xFF4A148C),
   chatBubblePrimary: Colors.green.shade700,
   chatBubbleSecondary: Colors.grey.shade800,
   success: Colors.green.shade700,
@@ -143,16 +143,16 @@ final _darkCustomColors = CustomColors(
 );
 
 final ThemeData lightTheme = ThemeData(
-  primarySwatch: Colors.purple,  // Changed to purple to match translation icon
+  primarySwatch: Colors.purple,
   brightness: Brightness.light,
   appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF9C27B0),  // Violet
+    backgroundColor: Color(0xFF9C27B0),
     foregroundColor: Colors.white,
-    iconTheme: IconThemeData(color: Colors.white),  // Add this line
-    actionsIconTheme: IconThemeData(color: Colors.white),  // Add this line
+    iconTheme: IconThemeData(color: Colors.white),
+    actionsIconTheme: IconThemeData(color: Colors.white),
   ),
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: Color(0xFF9C27B0),  // Violet
+    backgroundColor: Color(0xFF9C27B0),
   ),
   textTheme: const TextTheme(
     bodyLarge: TextStyle(color: Colors.black),
@@ -171,16 +171,16 @@ final ThemeData lightTheme = ThemeData(
 );
 
 final ThemeData darkTheme = ThemeData(
-  primarySwatch: Colors.purple,  // Changed to purple to match translation icon
+  primarySwatch: Colors.purple,
   brightness: Brightness.dark,
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.grey[900],
     foregroundColor: Colors.white,
-    iconTheme: const IconThemeData(color: Colors.white),  // Add this line
-    actionsIconTheme: const IconThemeData(color: Colors.white),  // Add this line
+    iconTheme: const IconThemeData(color: Colors.white),
+    actionsIconTheme: const IconThemeData(color: Colors.white),
   ),
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: Color(0xFFCE93D8),  // Light violet
+    backgroundColor: Color(0xFFCE93D8),
   ),
   textTheme: const TextTheme(
     bodyLarge: TextStyle(color: Colors.white),

@@ -26,7 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (token != null) {
       // Erfolgsmeldung anzeigen
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registrierung erfolgreich!')),
+        const SnackBar(content: Text('Registration successful')),
       );
 
       // Weiterleitung zum Hauptbildschirm
@@ -34,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else {
       // Fehlermeldung anzeigen
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registrierung fehlgeschlagen')),
+        const SnackBar(content: Text('Registration failed')),
       );
     }
   }

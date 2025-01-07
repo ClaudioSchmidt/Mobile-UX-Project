@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../core/api_service.dart';
-// Add this import
-import 'dart:math'; // Add this import
-import 'chat_screen.dart'; // Add this import
+import 'dart:math';
+import 'chat_screen.dart';
 
 class MatchmakingScreen extends StatefulWidget {
   const MatchmakingScreen({super.key});
@@ -14,10 +13,10 @@ class MatchmakingScreen extends StatefulWidget {
 }
 
 class _MatchmakingScreenState extends State<MatchmakingScreen> {
-  final ApiService _apiService = ApiService(); // Add this line
-  List<dynamic> users = []; // Add this line
+  final ApiService _apiService = ApiService();
+  List<dynamic> users = [];
   List<LanguageSelection> selectedLanguages = [];
-  List<dynamic> chats = []; // Add this line
+  List<dynamic> chats = [];
   bool isAutoMatchmakingEnabled = false;
 
   final List<LanguageOption> languageOptions = [
@@ -72,7 +71,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
 
     if (availableLanguages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Keine weiteren Sprachen verfügbar.')),
+        const SnackBar(content: Text('No more languages to add')),
       );
       return;
     }
@@ -128,7 +127,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
         _showUserSelectionDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fehler beim Laden der Benutzer')),
+          const SnackBar(content: Text('Error loading users')),
         );
       }
     } else {
@@ -140,13 +139,13 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
           });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Fehler beim Laden der Benutzer')),
+            const SnackBar(content: Text('Error loading users')),
           );
           return;
         }
       }
       _showLoadingScreen();
-      await Future.delayed(const Duration(seconds: 3)); // Mock loading time
+      await Future.delayed(const Duration(seconds: 3));
       final random = Random();
       final randomUser = users[random.nextInt(users.length)];
       final chatName = '${randomUser['nickname']} - ${randomUser['language']} (${randomUser['proficiency']})';
@@ -158,22 +157,22 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
             chats = fetchedChats;
           });
           final newChat = fetchedChats.firstWhere((chat) => chat['chatname'] == chatName);
-          Navigator.pop(context); // Close loading screen
-          Navigator.pop(context); // Close matchmaking screen
+          Navigator.pop(context);
+          Navigator.pop(context);
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ChatScreen(
                 chatId: newChat['chatid'],
                 chatName: chatName,
-                onLikeChanged: (_) {}, // Pass a dummy callback
+                onLikeChanged: (_) {},
               ),
             ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fehler beim Erstellen des Chats')),
+          const SnackBar(content: Text('Error creating chat')),
         );
       }
     }
@@ -195,16 +194,16 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(color: Colors.grey), // Match the color here
+                  const CircularProgressIndicator(color: Colors.grey),
                   const SizedBox(height: 20),
                   const Text(
-                    'Suche nach einem Match...',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey), // Match the color here
+                    'Searching for a match...',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
                   ),
                   const SizedBox(height: 20),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Abbrechen', style: TextStyle(color: Colors.red)),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.red)),
                   ),
                 ],
               ),
@@ -233,7 +232,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Benutzer auswählen'),
+          title: const Text('Choose a user to chat with'),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -255,21 +254,21 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                         });
                         final newChat = fetchedChats.firstWhere((chat) => chat['chatname'] == chatName);
                         Navigator.pop(context);
-                        Navigator.pop(context); // Close matchmaking screen
+                        Navigator.pop(context);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ChatScreen(
                               chatId: newChat['chatid'],
                               chatName: chatName,
-                              onLikeChanged: (_) {}, // Pass a dummy callback
+                              onLikeChanged: (_) {},
                             ),
                           ),
                         );
                       }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Fehler beim Erstellen des Chats')),
+                        const SnackBar(content: Text('Error creating chat')),
                       );
                     }
                   },
@@ -280,7 +279,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
+              child: const Text('Cancel'),
             ),
           ],
         );
@@ -302,7 +301,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Matchmaking Einstellungen'),
+        title: const Text('Matchmaking Settings'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -312,7 +311,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Automatisches Matchmaking',
+                const Text('Automatic Matchmaking',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 Switch(
                   value: isAutoMatchmakingEnabled,
@@ -326,7 +325,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text('Gewählte Sprachen:',
+            const Text('Select your languages',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Expanded(
@@ -348,7 +347,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                               height: 50,
                               child: Center(
                                 child: Text(
-                                  'Maximal 3 Sprachen',
+                                  'Only 3 languages allowed',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -381,7 +380,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Sprache hinzufügen',
+                                        'Add Language',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -440,7 +439,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                                     style: TextStyle(
                                       color: isSelected 
                                           ? Colors.white 
-                                          : Theme.of(context).textTheme.titleMedium?.color,  // Änderung hier: bodyLarge -> titleMedium
+                                          : Theme.of(context).textTheme.titleMedium?.color,
                                     ),
                                   ),
                                   backgroundColor: isSelected
@@ -451,10 +450,10 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
                                   shape: !isSelected && Theme.of(context).brightness == Brightness.dark
                                       ? StadiumBorder(
                                           side: BorderSide(
-                                            color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.white,  // Änderung hier: bodyLarge -> titleMedium
+                                            color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.white,
                                           ),
                                         )
-                                      : const StadiumBorder(), // Füge diese Zeile hinzu für konsistente Rundung
+                                      : const StadiumBorder(),
                                 ),
                               );
                             }).toList(),
@@ -553,7 +552,7 @@ class _AddLanguageDialogState extends State<AddLanguageDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Sprache hinzufügen'),
+      title: const Text('Add Language'),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -562,7 +561,7 @@ class _AddLanguageDialogState extends State<AddLanguageDialog> {
             TextField(
               controller: searchController,
               decoration: const InputDecoration(
-                labelText: 'Suche nach Sprache',
+                labelText: 'Search language',
                 prefixIcon: Icon(Icons.search),
               ),
             ),
@@ -589,7 +588,7 @@ class _AddLanguageDialogState extends State<AddLanguageDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: const Text('Cancel'),
         ),
       ],
     );

@@ -10,7 +10,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final ApiService _apiService = ApiService();
-  // Mock settings values
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
@@ -26,12 +25,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Logout bestätigen'),
-          content: const Text('Möchtest du dich wirklich ausloggen?'),
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to logout?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
@@ -48,9 +47,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pushReplacementNamed(context, '/login');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logout fehlgeschlagen')),
+          const SnackBar(content: Text('Logout failed')),
         );
       }
+    }
+  }
+
+  Future<void> _changePassword() async {
+    final TextEditingController currentPasswordController = TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: currentPasswordController,
+                decoration: const InputDecoration(labelText: 'Current Password'),
+                obscureText: true,
+              ),
+              TextField(
+                controller: newPasswordController,
+                decoration: const InputDecoration(labelText: 'New Password'),
+                obscureText: true,
+              ),
+              TextField(
+                controller: confirmPasswordController,
+                decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (newPasswordController.text == confirmPasswordController.text) {
+                  Navigator.pop(context, true);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Passwords do not match')),
+                  );
+                }
+              },
+              child: const Text('Change Password'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await Future.delayed(const Duration(seconds: 1));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password changed successfully')),
+      );
     }
   }
 
@@ -62,7 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          const _SectionHeader(title: 'Notifications'),
+          const _SectionHeader(title: 'Notifications', showSeparator: false),
           SwitchListTile(
             title: const Text('Enable Notifications'),
             subtitle: const Text('Receive chat and system notifications'),
@@ -85,7 +144,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Default Translation Language'),
             subtitle: Text(_defaultTranslationLanguage),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {/* Show language picker */},
           ),
           SwitchListTile(
             title: const Text('Auto-Translate Messages'),
@@ -116,13 +174,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('App Language'),
             subtitle: Text(_appLanguage),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {/* Show language picker */},
           ),
           ListTile(
             title: const Text('Theme'),
             subtitle: Text(_selectedTheme),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {/* Show theme picker */},
           ),
           SwitchListTile(
             title: const Text('Auto-Correct'),
@@ -133,9 +189,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const _SectionHeader(title: 'Account'),
           ListTile(
-            title: const Text('Delete Account'),
+            title: const Text('Change Password'),
+            onTap: _changePassword,
+          ),
+          const ListTile(
+            title: Text('Delete Account'),
             textColor: Colors.red,
-            onTap: () {/* Show delete confirmation */},
           ),
           ListTile(
             title: const Text('Logout'),
@@ -150,19 +209,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final bool showSeparator;
 
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, this.showSeparator = true});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showSeparator)
+          Divider(thickness: 2, color: const Color.fromARGB(30, 255, 255, 255).withOpacity(0.2)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }

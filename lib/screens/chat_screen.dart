@@ -8,7 +8,7 @@ import '../widgets/chat_bubble.dart';
 import '../core/translation_service.dart';
 import 'package:intl/intl.dart';
 import '../widgets/date_separator.dart';
-import '../theme.dart';  // Add this import
+import '../theme.dart';
 import '../widgets/language_badge.dart';
 import '../util/chat_name_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ChatScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
-  final Function(bool) onLikeChanged; // Add this parameter
+  final Function(bool) onLikeChanged;
 
   const ChatScreen({super.key, required this.chatId, required this.chatName, required this.onLikeChanged}); // Update constructor
 
@@ -66,7 +66,6 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         messages = fetchedMessages;
       });
-      // Delay the scroll to ensure the layout is complete
       await Future.delayed(const Duration(milliseconds: 100));
       _scrollToBottom();
     }
@@ -91,9 +90,6 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _selectedImageBytes = bytes;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bild ausgewählt: ${image.name}')),
-      );
     }
   }
 
@@ -125,12 +121,11 @@ class _ChatScreenState extends State<ChatScreen> {
         _selectedImageBytes = null;
       });
       await _loadMessages();
-      // Add extra scroll after new message
       await Future.delayed(const Duration(milliseconds: 100));
       _scrollToBottom();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nachricht konnte nicht gesendet werden')),
+        const SnackBar(content: Text('Failed to send message')),
       );
     }
   }
@@ -139,17 +134,17 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Chat auflösen?'),
+        title: const Text('Remove chat?'),
         content: const Text(
-            'Bist du sicher, dass du diesen Chat auflösen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+            'Are you sure you want to remove this chat? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Löschen', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -160,11 +155,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (success) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chat erfolgreich gelöscht')),
+          const SnackBar(content: Text('Chat has been deleted')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fehler beim Löschen des Chats')),
+          const SnackBar(content: Text('Error deleting chat')),
         );
       }
     }
@@ -174,17 +169,17 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Chat melden'),
+        title: const Text('Report chat?'),
         content: const Text(
-            'Bist du sicher, dass du diesen Chat melden möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
+            'Are you sure you want to report this chat? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Melden', style: TextStyle(color: Colors.red)),
+            child: const Text('Report', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -192,7 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (confirmed == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chat wurde gemeldet')),
+        const SnackBar(content: Text('Chat has been reported')),
       );
     }
   }
@@ -285,7 +280,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       prefs.setStringList('likedChats', likedChatIds);
     });
-    widget.onLikeChanged(isLiked); // Notify the main screen about the change
+    widget.onLikeChanged(isLiked);
   }
 
   @override
@@ -335,7 +330,6 @@ class _ChatScreenState extends State<ChatScreen> {
               } else if (value == 'report') {
                 _reportChat();
               } else if (value == 'viewProfile') {
-                // Profile ansehen logic here
               }
             },
             itemBuilder: (context) => [
@@ -420,11 +414,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: TextField(
                     controller: _messageController,
                     decoration: const InputDecoration(
-                      hintText: 'Nachricht schreiben...',
+                      hintText: 'Write message...',
                       fillColor: Colors.transparent,
                       filled: true,
                     ),
-                    // Add these properties:
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendMessage(),
                   ),
@@ -446,7 +439,7 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Übersetzungssprache'),
+        title: const Text('Translation Language'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -459,7 +452,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 onTap: () {
                   setState(() {
                     TranslationService.currentLanguage = entry.key;
-                    // Trigger rebuild of all chat bubbles
                     messages = List.from(messages);
                   });
                   Navigator.pop(context);
@@ -471,7 +463,7 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Abbrechen', style: TextStyle(color: customColors.primaryText)),
+            child: Text('Cancel', style: TextStyle(color: customColors.primaryText)),
           ),
         ],
       ),

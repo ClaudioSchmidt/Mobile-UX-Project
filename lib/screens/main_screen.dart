@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../core/api_service.dart';
-import '../theme.dart';  // Add this import
+import '../theme.dart';
 import 'account_screen.dart';
 import 'settings_screen.dart';
 import 'matchmaking_screen.dart';
@@ -13,10 +13,10 @@ import '../util/chat_name_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {
-  final void Function(bool) toggleTheme; // Add this parameter
-  final bool isDarkMode; // Add this parameter
+  final void Function(bool) toggleTheme;
+  final bool isDarkMode;
 
-  const MainScreen({super.key, required this.toggleTheme, required this.isDarkMode}); // Update constructor
+  const MainScreen({super.key, required this.toggleTheme, required this.isDarkMode});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -31,41 +31,40 @@ class _MainScreenState extends State<MainScreen> {
 
   _MainScreenState() : _isDarkMode = false;
 
-  // Add these new variables
   final List<Map<String, dynamic>> _mockNotifications = [
     {
       'type': 'chat_request',
-      'title': 'Neue Chat-Anfrage',
-      'message': 'Sarah möchte Deutsch mit dir üben',
+      'title': 'New Chat Request',
+      'message': 'Sarah wants to chat with you',
       'time': DateTime.now().subtract(const Duration(minutes: 5)),
       'read': false,
       'actions': ['accept', 'decline']
     },
     {
       'type': 'like',
-      'title': 'Neues Like',
-      'message': 'Michael hat dir ein Like gegeben',
+      'title': 'New Like',
+      'message': 'Michael liked your profile',
       'time': DateTime.now().subtract(const Duration(hours: 1)),
       'read': false,
     },
     {
       'type': 'like',
-      'title': 'Neues Like',
-      'message': 'Anna hat dir ein Like gegeben',
+      'title': 'New Like',
+      'message': 'Anna liked your profile',
       'time': DateTime.now().subtract(const Duration(hours: 2)),
       'read': true,
     },
     {
       'type': 'system',
-      'title': 'App Update verfügbar',
-      'message': 'Version 2.0 ist jetzt verfügbar mit neuen Features!',
+      'title': 'App Update Available',
+      'message': 'Version 2.0.1 is now available. Update now!',
       'time': DateTime.now().subtract(const Duration(hours: 2)),
       'read': true,
     },
     {
       'type': 'message',
-      'title': 'Neue Nachricht',
-      'message': 'Anna: Hallo, wie geht es dir?',
+      'title': 'New Message',
+      'message': 'Anna: Hi, how are you?',
       'time': DateTime.now().subtract(const Duration(hours: 3)),
       'read': false,
     },
@@ -97,12 +96,12 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Logout bestätigen'),
-          content: const Text('Möchtest du dich wirklich ausloggen?'),
+          title: const Text('Logout'),
+          content: const Text('Do you really want to logout?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
@@ -119,7 +118,7 @@ class _MainScreenState extends State<MainScreen> {
         Navigator.pushReplacementNamed(context, '/login');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logout fehlgeschlagen')),
+          const SnackBar(content: Text('Logout failed')),
         );
       }
     }
@@ -142,7 +141,7 @@ class _MainScreenState extends State<MainScreen> {
     final messages = await _apiService.getMessages(chatId);
     if (messages != null && messages.isNotEmpty) {
       final lastMessage = messages.last;
-      final sender = lastMessage['usernick'] ?? 'Unbekannt';
+      final sender = lastMessage['usernick'] ?? 'Unknown';
       final content = lastMessage['text'] ?? '📷';
       final timestamp = lastMessage['time'] ?? '';
       final formattedTimestamp = _formatTimestamp(timestamp);
@@ -152,7 +151,7 @@ class _MainScreenState extends State<MainScreen> {
       };
     }
     return {
-      'message': 'Fang den ersten Schritt zum Sprachenmeister an!',
+      'message': 'No messages yet',
       'timestamp': '',
     };
   }
@@ -214,7 +213,6 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('Ongoing Chats'),
         actions: [
-          // Theme Switch
           Row(
             children: [
               Icon(
@@ -241,7 +239,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ],
           ),
-          // Account Icon
+
           IconButton(
             icon: const Icon(Icons.account_circle),
             tooltip: 'Account',
@@ -252,7 +250,6 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
-          // Notification Icon
           IconButton(
             icon: Stack(
               children: [
@@ -295,7 +292,7 @@ class _MainScreenState extends State<MainScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           chats.isEmpty
-              ? const Center(child: Text('Keine Chats vorhanden'))
+              ? const Center(child: Text('No chats yet. Start matchmaking!'))
               : Expanded(
                   child: ListView.builder(
                     itemCount: chats.length,
@@ -307,7 +304,7 @@ class _MainScreenState extends State<MainScreen> {
                       return FutureBuilder<Map<String, String>>(
                         future: _getLastMessage(chat['chatid']),
                         builder: (context, snapshot) {
-                          final lastMessage = snapshot.data?['message'] ?? 'Lade...';
+                          final lastMessage = snapshot.data?['message'] ?? 'Loading...';
                           final timestamp = snapshot.data?['timestamp'] ?? '';
                           return ListTile(
                             title: Row(
@@ -358,7 +355,7 @@ class _MainScreenState extends State<MainScreen> {
                                   builder: (context) => ChatScreen(
                                     chatId: chat['chatid'],
                                     chatName: chat['chatname'],
-                                    onLikeChanged: _onLikeChanged, // Pass the callback function
+                                    onLikeChanged: _onLikeChanged,
                                   ),
                                 ),
                               );

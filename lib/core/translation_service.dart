@@ -34,7 +34,7 @@ class TranslationService {
       );
       return translation.text;
     } catch (e) {
-      return '[Übersetzung fehlgeschlagen]';
+      return '[Translation failed]';
     }
   }
 }
