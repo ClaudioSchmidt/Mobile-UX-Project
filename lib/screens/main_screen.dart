@@ -228,7 +228,27 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Welcome, ${userNick ?? '...'}'),
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 180) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  Text(
+                    userNick ?? '...',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              );
+            } else {
+              return Text('Welcome, ${userNick ?? '...'}');
+            }
+          },
+        ),
         leading: IconButton(
           icon: Icon(_showMainChat ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
           onPressed: () {

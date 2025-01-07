@@ -18,7 +18,7 @@ class ChatScreen extends StatefulWidget {
   final String chatName;
   final Function(bool) onLikeChanged;
 
-  const ChatScreen({super.key, required this.chatId, required this.chatName, required this.onLikeChanged}); // Update constructor
+  const ChatScreen({super.key, required this.chatId, required this.chatName, required this.onLikeChanged});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -290,19 +290,22 @@ class _ChatScreenState extends State<ChatScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Text(chatInfo.displayName),
-            if (chatInfo.languageCode != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: LanguageBadge(
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(chatInfo.displayName),
+              if (chatInfo.languageCode != null)
+                LanguageBadge(
                   languageCode: chatInfo.languageCode!,
                   languageName: chatInfo.languageName!,
                   level: chatInfo.level!,
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton.icon(
@@ -335,15 +338,15 @@ class _ChatScreenState extends State<ChatScreen> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'viewProfile',
-                child: Text('Profil ansehen'),
+                child: Text('View Profile'),
               ),
               const PopupMenuItem(
                 value: 'report',
-                child: Text('Profil melden'),
+                child: Text('Report User'),
               ),
               const PopupMenuItem(
                 value: 'delete',
-                child: Text('Chat auflösen'),
+                child: Text('Remove Chat'),
               ),
             ],
           ),
