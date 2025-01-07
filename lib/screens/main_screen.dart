@@ -28,6 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   Timer? _timer;
   bool _isDarkMode;
   Set<int> likedChats = {};
+  String? userNick; // Add this line
 
   _MainScreenState() : _isDarkMode = false;
 
@@ -77,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
     _loadChats();
     _startAutoRefresh();
     _loadLikedChats();
+    _loadUserNick(); // Add this line
   }
 
   @override
@@ -207,11 +209,26 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {});
   }
 
+  // Add this method
+  Future<void> _loadUserNick() async {
+    final hash = await _apiService.getUserHash();
+    final profiles = await _apiService.getProfiles();
+    if (profiles != null && hash != null) {
+      final userProfile = profiles.firstWhere(
+        (profile) => profile['hash'] == hash,
+        orElse: () => {'nickname': 'User'},
+      );
+      setState(() {
+        userNick = userProfile['nickname'];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ongoing Chats'),
+        title: Text('Welcome, ${userNick ?? '...'}'),
         actions: [
           Row(
             children: [
